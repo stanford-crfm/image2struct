@@ -4,8 +4,7 @@
 set -e
 
 # Install non-pip dependencies
-sudo sh ./installs/install-latex.sh
-sudo sh ./installs/install-webpage.sh
+sudo sh ./install.sh
 
 # Install python dependencies
 # On Mac OS, skip installing pytorch with CUDA because CUDA is not supported

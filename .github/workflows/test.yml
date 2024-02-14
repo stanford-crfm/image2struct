@@ -30,9 +30,12 @@ jobs:
           restore-keys: |
             pip-
       # Installs dependencies and performs static code checks
-      - run: python3 -m pip install virtualenv && python3 -m virtualenv -p python3 venv
-      - run: source venv/bin/activate && sudo sh ./install-dev.sh
-      - run: source venv/bin/activate && ./pre-commit.sh
+      - name: Install pip dependencies
+        run: python3 -m pip install virtualenv && python3 -m virtualenv -p python3 venv && source venv/bin/activate && pip install --upgrade pip && pip install -e ".[all,dev]" && pip check
+      - name: Install additional dependencies
+        run: source venv/bin/activate && sudo sh ./install.sh
+      - name: Run static code checks
+        run: source venv/bin/activate && ./pre-commit.sh
       # TODO: Add a small run here
 
   test:
@@ -57,8 +60,10 @@ jobs:
           restore-keys: |
             pip-
       # Installs dependencies and performs static code checks
-      - run: python3 -m pip install virtualenv && python3 -m virtualenv -p python3 venv
-      - run: source venv/bin/activate && sudo sh ./install-dev.sh
+      - name: Install pip dependencies
+        run: python3 -m pip install virtualenv && python3 -m virtualenv -p python3 venv && source venv/bin/activate && pip install --upgrade pip && pip install -e ".[all]"
+      - name: Install additional dependencies
+        run: source venv/bin/activate && sudo sh ./install.sh
       - name: Run tests
         run: source venv/bin/activate && pytest --durations=20
         env:
