@@ -4,4 +4,5 @@
 set -e
 
 # Install LaTeX
-sudo apt-get install texlive-full
+sudo apt-get install texlive-latex-extra texlive-fonts-recommended texlive-science
+sudo apt-get install latexmk
