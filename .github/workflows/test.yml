@@ -1,0 +1,66 @@
+# Source: https://github.com/stanford-crfm/helm/blob/main/.github/workflows/test.yml
+
+name: Test
+on:
+  push:
+    branches: [ main ]
+    paths-ignore:
+      - 'experimental/**'
+  pull_request:
+    paths-ignore:
+      - 'experimental/**'
+
+jobs:
+  install:
+    name: Install dependencies and perform small run
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.8", "3.9", "3.10"]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - uses: actions/cache@v2
+        with:
+          path: ~/.cache/pip
+          key: pip-${{ hashFiles('requirements.txt') }}-${{ matrix.python-version }}
+          restore-keys: |
+            pip-
+      - run: python3 -m pip install virtualenv && python3 -m virtualenv -p python3 venv
+      - run: source venv/bin/activate && ./install-dev.sh
+      - run: source venv/bin/activate && ./pre-commit.sh
+      # TODO: Add a small run here
+
+  test:
+    name: Run all tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.8", "3.9", "3.10"]
+    steps:
+      - name: Clear free space
+        run: |
+            sudo rm -rf /opt/ghc
+            df -h
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - uses: actions/cache@v2
+        with:
+          path: ~/.cache/pip
+          key: pip-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            pip-
+      # Installs dependencies and performs static code checks
+      - run: python3 -m pip install virtualenv && python3 -m virtualenv -p python3 venv
+      - run: source venv/bin/activate && ./install-dev.sh
+      - run: source venv/bin/activate && ./pre-commit.sh
+      - name: Run tests
+        run: source venv/bin/activate && pytest --durations=20
+        env:
+          TEST: ${{ matrix.test }}
+          VERSION: ${{ github.head_ref || 'main' }}
