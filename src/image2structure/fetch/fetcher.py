@@ -25,6 +25,9 @@ class ScrapeResult:
     # Where to download the actual data
     download_url: str
 
+    # Name of the instance
+    instance_name: str
+
     # Additional information about the result
     additional_info: Dict[str, Any]
 

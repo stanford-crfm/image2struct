@@ -1,10 +1,17 @@
-from typing import Dict, Tuple
+from typing import Dict, Tuple, List, Any
 
 import argparse
 import datetime
+import json
+import os
+import shutil
 
 from .runner import Runner
 from .run_specs import _RUNNER_REGISTRY
+from image2structure.fetch.fetcher import ScrapeResult
+from image2structure.filter.filter import FilterError
+from image2structure.compilation.compiler import CompilationError
+from image2structure.fetch.fetcher import DownloadError
 
 
 def get_args_parser() -> (
@@ -64,6 +71,110 @@ def get_args_parser() -> (
             subparser.add_argument(f"--{arg}", type=arg_type, required=True)
 
     return parser, subparsers_dict
+
+
+def run(runner: Runner, args: argparse.Namespace) -> None:
+    # Create the output directories
+    output_path: str = os.path.join(
+        args.destination_path, args.runner_name, args.category
+    )
+    image_path: str = os.path.join(output_path, "images")
+    structure_path: str = os.path.join(output_path, "structure")
+    metadata_path: str = os.path.join(output_path, "metadata")
+    for path in [output_path, image_path, structure_path, metadata_path]:
+        os.makedirs(path, exist_ok=True)
+
+    # Variables to keep track of the progress
+    num_instances_collected: int = 0
+    num_instances_downloaded: int = 0
+    num_instances_compiled: int = 0
+
+    # Scrape the data
+    while num_instances_collected < args.num_instances:
+        scrape_results: List[ScrapeResult] = runner.fetcher.scrape()
+        for scrape_result in scrape_results:
+            # Download the data
+            ided_instance_name: str = (
+                f"{num_instances_collected:04d}_{scrape_result.instance_name}"
+            )
+            download_path = os.path.join(structure_path, ided_instance_name)
+            metadata = {
+                # Add all the ScrapeResult fields to the metadata
+                **{k: v for k, v in scrape_result._asdict().items()},
+                # Add additional metadata
+                "category": args.category,
+                "date": datetime.datetime.now().isoformat(),
+                "download_path": download_path,
+            }
+            try:
+                runner.fetcher.download(download_path, scrape_result)
+                num_instances_downloaded += 1
+            except DownloadError as e:
+                print(f"Failed to download data: {e}")
+                continue
+
+            # Run filters
+            for filter in runner.file_filters:
+                try:
+                    accepted, infos = filter.filter(download_path)
+                    if not accepted:
+                        print(f"Data did not pass filter {filter}: {infos}")
+                        shutil.rmtree(download_path)
+                        continue
+                    elif infos:
+                        if "filters" not in metadata:
+                            metadata["filters"] = {}
+                        metadata["filters"][filter.__class__.__name__] = infos
+                except FilterError as e:
+                    print(f"Failed to filter data: {e}")
+                    continue
+
+            # Compile the data
+            image_path: str = os.path.join(image_path, f"{ided_instance_name}.png")
+            try:
+                compilation_info: Dict[str, Any] = runner.compiler.compile(
+                    image_path, args.timeout, metadata
+                )
+                num_instances_compiled += 1
+                if compilation_info:
+                    metadata["compilation_info"] = compilation_info
+            except CompilationError as e:
+                print(f"Failed to compile data: {e}")
+                continue
+
+            # Post-process filters
+            for filter in runner.post_processors:
+                try:
+                    accepted, infos = filter.check_and_accept_image(image_path)
+                    if not accepted:
+                        print(f"Data did not pass post-filter {filter}: {infos}")
+                        shutil.rmtree(download_path)
+                        continue
+                    elif infos:
+                        if "post_filters" not in metadata:
+                            metadata["post_filters"] = {}
+                        metadata["post_filters"][filter.__class__.__name__] = infos
+                except FilterError as e:
+                    print(f"Failed to post-filter data: {e}")
+                    continue
+
+            # Save the metadata
+            metadata_path: str = os.path.join(
+                metadata_path, f"{ided_instance_name}.json"
+            )
+            with open(metadata_path, "w") as f:
+                json.dump(metadata, f, indent=4)
+
+            # Increment the number of instances collected
+            num_instances_collected += 1
+            print(f"Instance {ided_instance_name} collected!")
+            if num_instances_collected >= args.num_instances:
+                break
+
+    print("Scraping complete!")
+    print(f" - {num_instances_downloaded} instances downloaded")
+    print(f" - {num_instances_compiled} instances compiled")
+    print(f" - {num_instances_collected} instances collected")
 
 
 def main() -> None:
