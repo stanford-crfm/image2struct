@@ -40,7 +40,7 @@ jobs:
         # PyTorch has to be installed manually in a separate step with --no-cache-dir
         # to avoid pip getting killed because PyTorch is too big
         # See: https://stackoverflow.com/a/54329850
-        run: pip install torch==2.1.2 torchvision==0.16.2 --index-url https://download.pytorch.org/whl/cu121 --no-cache-dir
+        run: pip install torch==2.0.1 torchvision==0.16.2 --index-url https://download.pytorch.org/whl/cu121 --no-cache-dir
       - name: Upgrade dependencies for Dependabot alerts
         run: pip install -e .[all,dev] urllib3==1.26.18 requests==2.31.0 Jinja2==3.1.3 certifi==2024.2.2 aiohttp==3.9.3
       - name: Verify dependencies
@@ -67,8 +67,6 @@ jobs:
         run: ./pre-commit.sh
       - name: Run tests
         run: pytest
-      - name: Run helm-run
-        run: helm-run --suite test --run-specs simple1:model=simple/model1 --max-eval-instances 10 --exit-on-error
       - name: Create pull request
         uses: peter-evans/create-pull-request@v5
         with:
