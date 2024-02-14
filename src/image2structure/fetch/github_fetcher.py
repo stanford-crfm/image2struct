@@ -1,9 +1,9 @@
-from .fetcher import Fetcher, DownloadError, ScrapeError, ScrapeResult, ScrapeConfig
+from .fetcher import Fetcher, DownloadError, ScrapeError, ScrapeResult
 
 
 import requests
 from typing import Optional, Any, Dict, List
-from datetime import datetime
+import datetime
 import os
 import subprocess
 import time
@@ -30,18 +30,16 @@ class GitHubFetcher(Fetcher):
 
     def __init__(
         self,
-        date_created_after: datetime,
-        date_created_before: datetime,
+        date_created_after: datetime.datetime,
+        date_created_before: datetime.datetime,
         subcategory: str,
         timeout: int,
-        port: int,
         max_size_kb: int,
         verbose: bool,
     ):
         super().__init__(
             date_created_after, date_created_before, subcategory, timeout, verbose
         )
-        self._port = port
         self._page: int = 1
         self._max_size_kb: int = max_size_kb
 
@@ -82,12 +80,13 @@ class GitHubFetcher(Fetcher):
                 else f"{self._date_created_after.strftime('%Y-%m-%d')}..{self._date_created_before.strftime('%Y-%m-%d')}"
             ),
         }
-        assert self._subcategory.lower() in [
+        if self._subcategory.lower() not in [
             "html",
             "css",
             "javascript",
             "python",
-        ], "Invalid subcategory"
+        ]:
+            raise ScrapeError(f"Invalid subcategory: {self._subcategory}")
         query_parameters["language"] = self._subcategory
         search_query = "github.io in:name "
         search_query += " ".join(
