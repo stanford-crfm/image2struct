@@ -61,7 +61,7 @@ jobs:
             pip-
       # Installs dependencies and performs static code checks
       - name: Install pip dependencies
-        run: python3 -m pip install virtualenv && python3 -m virtualenv -p python3 venv && source venv/bin/activate && pip install --upgrade pip && pip install -e ".[all]"
+        run: python3 -m pip install virtualenv && python3 -m virtualenv -p python3 venv && source venv/bin/activate && pip install --upgrade pip && pip install -e ".[all,dev]"
       - name: Install additional dependencies
         run: source venv/bin/activate && sudo sh ./install.sh
       - name: Run tests
