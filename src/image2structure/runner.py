@@ -2,9 +2,9 @@ from dataclasses import dataclass
 from typing import List
 
 from image2structure.fetch.fetcher import Fetcher
-from image2structure.filter.file_filter import FileFilter
+from image2structure.filter.file_filter.file_filter import FileFilter
 from image2structure.compilation.compiler import Compiler
-from image2structure.postprocessing.post_processor import PostProcessor
+from image2structure.filter.rendering_filter.rendering_filter import RenderingFilter
 
 
 @dataclass
@@ -21,4 +21,4 @@ class Runner:
     compiler: Compiler
 
     # The post processors to use
-    post_processors: List[PostProcessor]
+    post_processors: List[RenderingFilter]

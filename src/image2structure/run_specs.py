@@ -4,9 +4,9 @@ import datetime
 
 from image2structure.runner import Runner
 from image2structure.fetch.fetcher import Fetcher
-from image2structure.filter.file_filter import FileFilter
+from image2structure.filter.file_filter.file_filter import FileFilter
 from image2structure.compilation.compiler import Compiler
-from image2structure.postprocessing.post_processor import PostProcessor
+from image2structure.filter.rendering_filter.rendering_filter import RenderingFilter
 
 
 F = TypeVar("F", bound=Callable[..., Runner])
@@ -40,9 +40,10 @@ def get_webpage_runner(
     """Get a runner for webpage data."""
     from image2structure.compilation.webpage_compiler import WebpageCompiler
     from image2structure.fetch.github_fetcher import GitHubFetcher
-    from image2structure.postprocessing.new_image_post_processor import (
+    from image2structure.filter.rendering_filter.new_image_post_processor import (
         NewImagePostProcessor,
     )
+    from image2structure.compilation.webpage.driver import ScreenshotOptions
 
     fetcher = GitHubFetcher(
         date_created_after=date_created_after,
@@ -61,6 +62,7 @@ def get_webpage_runner(
         timeout=timeout,
         verbose=verbose,
         num_max_actions=0,  # Random clicks are disabled
+        screenshot_options=ScreenshotOptions(),
     )
 
     post_processors = [
