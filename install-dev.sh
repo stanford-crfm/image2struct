@@ -20,3 +20,7 @@ pip install --upgrade pip
 pip install -e ".[all,dev]"
 # Check dependencies
 pip check
+
+# Create a cache dir for Mypy
+# See: https://github.com/python/mypy/issues/10768
+mkdir -p .mypy_cache
