@@ -1,4 +1,5 @@
 from typing import Dict, Tuple, List, Any
+from dotenv import load_dotenv
 
 import argparse
 import datetime
@@ -178,6 +179,7 @@ def run(runner: Runner, args: argparse.Namespace) -> None:
 
 
 def main() -> None:
+    load_dotenv()
     parser, subparsers_dict = get_args_parser()
     args: argparse.Namespace
 
@@ -199,6 +201,9 @@ def main() -> None:
     runner_func = runner_info["func"]
     runner_args = {arg: getattr(args, arg) for arg in runner_info["args_info"].keys()}
     runner_args["verbose"] = args.verbose
+    runner_args["date_created_after"] = args.date_from
+    runner_args["date_created_before"] = args.date_to
+    runner_args["subcategory"] = args.category
     runner = runner_func(**runner_args)
 
     print(runner)

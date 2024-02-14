@@ -1,6 +1,8 @@
 from typing import TypeVar, Dict, Callable, Union
 
-from .runner import Runner
+import datetime
+
+from image2structure.runner import Runner
 from image2structure.fetch.fetcher import Fetcher
 from image2structure.filter.file_filter import FileFilter
 from image2structure.compilation.compiler import Compiler
@@ -25,8 +27,16 @@ def register_runner(name: str, args_info=None):
     return wrapper
 
 
-@register_runner("webpage", args_info={"timeout": int, "port": int})
-def get_webpage_runner(timeout: int, port: int, verbose: bool) -> Runner:
+@register_runner("webpage", args_info={"timeout": int, "port": int, "max_size_kb": int})
+def get_webpage_runner(
+    date_created_after: datetime.datetime,
+    date_created_before: datetime.datetime,
+    subcategory: str,
+    timeout: int,
+    port: int,
+    max_size_kb: int,
+    verbose: bool,
+) -> Runner:
     """Get a runner for webpage data."""
     from image2structure.compilation.webpage_compiler import WebpageCompiler
     from image2structure.fetch.github_fetcher import GitHubFetcher
@@ -34,7 +44,15 @@ def get_webpage_runner(timeout: int, port: int, verbose: bool) -> Runner:
         NewImagePostProcessor,
     )
 
-    fetcher = GitHubFetcher(timeout=timeout)
+    fetcher = GitHubFetcher(
+        date_created_after=date_created_after,
+        date_created_before=date_created_before,
+        subcategory=subcategory,
+        timeout=timeout,
+        port=port,
+        max_size_kb=max_size_kb,
+        verbose=verbose,
+    )
     file_filters = []
     compiler = WebpageCompiler(port=port, verbose=verbose)
     post_processors = [

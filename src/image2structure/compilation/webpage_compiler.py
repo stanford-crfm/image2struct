@@ -13,6 +13,7 @@ class WebpageCompiler(Compiler):
 
     def compile(
         self,
+        data_path: str,
         destination_path: str,
         timeout: int,
         additional_args: Dict[str, Any],
@@ -21,26 +22,26 @@ class WebpageCompiler(Compiler):
         Compile the given data into a webpage using Jekyll.
 
         Args:
+            data_path: The path to the repository to compile.
             destination_path: The path to save the compiled data to.
             timeout: The maximum time in seconds to allow the compilation to run.
             additional_args: Additional arguments to pass to the compiler.
+                - screenshot_options: Options to pass to the screenshot function.
+                - max_actions: The maximum number of actions to perform on the page.
         """
 
         infos: Dict[str, Any] = {}
 
         # Check that the repo path exists
-        assert "repo_path" in additional_args, "repo_path must be provided"
-        assert type(additional_args["repo_path"]) == str, "repo_path must be a string"
-        assert additional_args["repo_path"].exists(), "repo_path must exist"
-        repo_path: str = additional_args.get("repo_path")
+        assert data_path.exists(), "repo_path must exist"
 
         # Start the Jekyll server
-        server = JekyllServer(repo_path, self._verbose, self._port)
+        server = JekyllServer(data_path, self._verbose, self._port)
         success: bool = server.start(timeout)
         if not success:
-            print(f"Failed to start the server for {repo_path}. Skipping...")
+            print(f"Failed to start the server for {data_path}. Skipping...")
             server.stop()
-            raise CompilationError(f"Jekyll server failed to start: {repo_path}")
+            raise CompilationError(f"Jekyll server failed to start: {data_path}")
 
         # Take a screenshot of a random page
         try:

@@ -5,20 +5,6 @@ import datetime
 
 
 @dataclass
-class ScrapeConfig:
-    """Dataclass for storing the configuration of a scraper."""
-
-    # Date after which the data was published
-    date_creater_after: datetime.datetime
-
-    # Number of data points to scrape
-    num_instances: int
-
-    # Additional information about the scrape
-    additional_info: Dict[str, Any]
-
-
-@dataclass
 class ScrapeResult:
     """Dataclass for store infos returned by scrapping of fetching an API."""
 
@@ -42,8 +28,22 @@ class DownloadError(Exception):
 
 class Fetcher(ABC):
 
+    def __init__(
+        self,
+        date_created_after: datetime.datetime,
+        date_created_before: datetime.datetime,
+        subcategory: str,
+        timeout: int,
+        verbose: bool,
+    ):
+        self._sucategory = subcategory
+        self._date_created_after = date_created_after
+        self._date_created_before = date_created_before
+        self._timeout = timeout
+        self._verbose = verbose
+
     @abstractmethod
-    def scrape(self, scrape_config: ScrapeConfig) -> List[ScrapeResult]:
+    def scrape(self, num_instances: int) -> List[ScrapeResult]:
         """
         Scrape the data from the given scrape configuration.
 
