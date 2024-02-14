@@ -1,4 +1,4 @@
-from typing import Dict, Any, 
+from typing import Dict, Any, Tuple
 
 from .post_processor import PostProcessor
 from .image_filter import ImageFilter
