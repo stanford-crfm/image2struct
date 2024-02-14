@@ -53,9 +53,18 @@ def get_webpage_runner(
         max_size_kb=max_size_kb,
         verbose=verbose,
     )
+
     file_filters = []
-    compiler = WebpageCompiler(port=port, verbose=verbose)
+
+    compiler = WebpageCompiler(
+        port=port,
+        timeout=timeout,
+        verbose=verbose,
+        num_max_actions=0,  # Random clicks are disabled
+    )
+
     post_processors = [
         NewImagePostProcessor({"max_white_ratio": 0.99, "max_similarity_ratio": 0.99})
     ]
+
     return Runner(fetcher, file_filters, compiler, post_processors)

@@ -10,21 +10,13 @@ class Compiler(ABC):
     """Compiles data into a structure."""
 
     @abstractmethod
-    def compile(
-        self,
-        data_path: str,
-        destination_path: str,
-        timeout: int,
-        additional_args: Dict[str, Any],
-    ) -> Dict[str, Any]:
+    def compile(self, data_path: str, destination_path: str) -> Dict[str, Any]:
         """
         Compile the given data into a structure.
 
         Args:
             data_path: The path to the data to compile.
             destination_path: The path to save the compiled data to.
-            timeout: The maximum time in seconds to allow the compilation to run.
-            additional_args: Additional arguments to pass to the compiler.
 
         Returns:
             Dict[str, Any]: Information about the compilation.
