@@ -1,5 +1,7 @@
 from typing import Any, Dict
 
+import os
+
 from .compiler import Compiler, CompilationError
 from .webpage.jekyll_server import JekyllServer
 from .webpage.driver import save_random_screenshot, ScreenshotOptions
@@ -21,7 +23,7 @@ class WebpageCompiler(Compiler):
         self._num_max_actions = num_max_actions
         self._screenshot_options = screenshot_options
 
-    def compile(self, data_path: str, destination_path: str) -> None:
+    def compile(self, data_path: str, destination_path: str) -> Dict[str, Any]:
         """
         Compile the given data into a webpage using Jekyll.
 
@@ -34,10 +36,13 @@ class WebpageCompiler(Compiler):
         infos: Dict[str, Any] = {}
 
         # Check that the repo path exists
-        assert data_path.exists(), "repo_path must exist"
+        if not os.path.exists(data_path):
+            raise CompilationError(f"Path does not exist: {data_path}")
 
         # Start the Jekyll server
-        server = JekyllServer(data_path, self._verbose, self._port)
+        server = JekyllServer(
+            repo_path=data_path, port=self._port, verbose=self._verbose
+        )
         success: bool = server.start(self._timeout)
         if not success:
             print(f"Failed to start the server for {data_path}. Skipping...")

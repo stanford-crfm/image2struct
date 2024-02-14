@@ -31,7 +31,10 @@ class JekyllServer:
     def setup_gemfile(self):
         # Check if Gemfile exists, if not, copy Gemfile.default to Gemfile
         if not os.path.exists(f"{self.repo_path}/Gemfile"):
-            os.system(f"cp Gemfile.default {self.repo_path}/Gemfile")
+            default_gemfile_path = os.path.join(
+                os.path.dirname(os.path.realpath(__file__)), "Gemfile.default"
+            )
+            os.system(f"cp {default_gemfile_path} {self.repo_path}/Gemfile")
             if self.verbose:
                 print("Copied Gemfile.default to Gemfile")
             return
@@ -50,10 +53,21 @@ class JekyllServer:
     def setup_config(self):
         # Check if _config.yml exists, if not, copy _config.default.yml to _config.yml
         if not os.path.exists(f"{self.repo_path}/_config.yml"):
-            os.system(f"cp _config.default.yml {self.repo_path}/_config.yml")
+            default_config_path = os.path.join(
+                os.path.dirname(os.path.realpath(__file__)), "_config.default.yml"
+            )
+            os.system(f"cp {default_config_path} {self.repo_path}/_config.yml")
             if self.verbose:
                 print("Copied _config.default.yml to _config.yml")
-            return
+        # Search for line starting with "port:" and replace it with "port: <port>"
+        with open(f"{self.repo_path}/_config.yml", "r") as file:
+            lines = file.readlines()
+        with open(f"{self.repo_path}/_config.yml", "w") as file:
+            for line in lines:
+                if line.startswith("port"):
+                    file.write(f"port: {self.port}\n")
+                else:
+                    file.write(line)
 
     def is_port_in_use(port):
         """Check if a port is in use on localhost."""
