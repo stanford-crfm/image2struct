@@ -7,6 +7,10 @@ from .webpage.driver import save_random_screenshot, ScreenshotOptions
 
 class WebpageCompiler(Compiler):
 
+    def __init__(self, port: int, verbose: bool):
+        self._port = port
+        self._verbose = verbose
+
     def compile(
         self,
         destination_path: str,
@@ -29,11 +33,9 @@ class WebpageCompiler(Compiler):
         assert type(additional_args["repo_path"]) == str, "repo_path must be a string"
         assert additional_args["repo_path"].exists(), "repo_path must exist"
         repo_path: str = additional_args.get("repo_path")
-        verbose: bool = additional_args.get("verbose", False)
-        port: int = additional_args.get("port", 4000)
 
         # Start the Jekyll server
-        server = JekyllServer(repo_path, verbose, port)
+        server = JekyllServer(repo_path, self._verbose, self._port)
         success: bool = server.start(timeout)
         if not success:
             print(f"Failed to start the server for {repo_path}. Skipping...")
@@ -50,7 +52,7 @@ class WebpageCompiler(Compiler):
                 additional_args.get("max_actions", 0),
             )
             actions = save_random_screenshot(
-                destination_path, port=port, options=scheenshot_options
+                destination_path, port=self._port, options=scheenshot_options
             )
             infos["actions"] = actions
         except Exception as e:
