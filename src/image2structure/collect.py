@@ -1,3 +1,5 @@
+from typing import Dict, Tuple
+
 import argparse
 import datetime
 
@@ -5,17 +7,12 @@ from .runner import Runner
 from .run_specs import _RUNNER_REGISTRY
 
 
-def get_args_parser() -> argparse.ArgumentParser:
+def get_args_parser() -> (
+    Tuple[argparse.ArgumentParser, Dict[str, argparse.ArgumentParser]]
+):
     parser = argparse.ArgumentParser(description="Scrape data")
 
     # Common arguments
-    parser.add_argument(
-        "--data-type",
-        type=str,
-        required=True,
-        choices=["latex", "webpage"],
-        help="The type of data to scrape",
-    )
     parser.add_argument(
         "--category",
         type=str,
@@ -58,28 +55,39 @@ def get_args_parser() -> argparse.ArgumentParser:
 
     # Setup for sub-commands (runners)
     subparsers = parser.add_subparsers(dest="runner_name", help="Available runners")
+    subparsers_dict = {}
 
     for runner_name, runner_info in _RUNNER_REGISTRY.items():
         subparser = subparsers.add_parser(runner_name, help=f"{runner_name} runner")
+        subparsers_dict[runner_name] = subparser  # Store the subparser
         for arg, arg_type in runner_info["args_info"].items():
             subparser.add_argument(f"--{arg}", type=arg_type, required=True)
 
-    return parser
+    return parser, subparsers_dict
 
 
 def main() -> None:
-    parser: argparse.ArgumentParser = get_args_parser()
-    args = parser.parse_args()
+    parser, subparsers_dict = get_args_parser()
+    args: argparse.Namespace
+
+    try:
+        args = parser.parse_args()
+    except SystemExit:
+        print("\nError parsing arguments")
+        print("\n\n1. You must specify the shared arguments")
+        parser.print_help()
+        print("\n\n\n2. You must specify a runner along with its arguments")
+        for runner_name, subparser in subparsers_dict.items():
+            print(f"\nRunner: {runner_name}")
+            subparser.print_help()
+            print("")
+        return
 
     runner_name = args.runner_name
-    if runner_name:
-        runner_info = _RUNNER_REGISTRY[runner_name]
-        runner_func = runner_info["func"]
-        # Extract runner-specific arguments using metadata
-        runner_args = {arg: getattr(args, arg) for arg in runner_info["args_info"]}
-        runner_args["verbose"] = args.verbose
-        runner = runner_func(**runner_args)
-        # Here you can use the runner along with the common arguments as needed
-        print(runner)
-    else:
-        parser.print_help()
+    runner_info = _RUNNER_REGISTRY[runner_name]
+    runner_func = runner_info["func"]
+    runner_args = {arg: getattr(args, arg) for arg in runner_info["args_info"].keys()}
+    runner_args["verbose"] = args.verbose
+    runner = runner_func(**runner_args)
+
+    print(runner)
