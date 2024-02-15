@@ -7,7 +7,6 @@ from image2structure.fetch.fetcher import ScrapeResult
 
 
 class TestGitHubFetchFilter:
-
     def setup_method(self):
         self.fetch_filter = GitHubFetchFilter()
 

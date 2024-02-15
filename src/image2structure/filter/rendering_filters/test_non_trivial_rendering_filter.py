@@ -12,7 +12,6 @@ from image2structure.filter.rendering_filters.non_trivial_rendering_filter impor
 
 
 class TestNonTrivialRenderingFilter:
-
     def setup_method(self):
         self.filter = NonTrivialRenderingFilter(
             hashfunc=imagehash.average_hash,

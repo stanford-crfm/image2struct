@@ -7,7 +7,6 @@ from image2structure.filter.file_filters.repo_filter import RepoFilter
 
 
 class TestRepoFilter:
-
     def setup_method(self):
         self.repo_filter = RepoFilter(
             min_num_lines=10,

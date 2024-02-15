@@ -11,7 +11,6 @@ from image2structure.compilation.webpage.jekyll_server import JekyllServer
 
 
 class TestWebpageCompiler:
-
     def setup_method(self, method):
         self.compiler = WebpageCompiler(
             port=1234,

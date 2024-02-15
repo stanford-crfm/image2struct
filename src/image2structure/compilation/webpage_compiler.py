@@ -8,7 +8,6 @@ from .webpage.driver import save_random_screenshot, ScreenshotOptions
 
 
 class WebpageCompiler(Compiler):
-
     def __init__(
         self,
         port: int,

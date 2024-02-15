@@ -8,7 +8,6 @@ from image2structure.fetch.fetcher import ScrapeError, DownloadError, ScrapeResu
 
 
 class TestGitHubFetcher:
-
     def test_scrape_runs(self):
         fetcher = GitHubFetcher(
             # Set fixed dates to avoid flakiness

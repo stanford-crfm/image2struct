@@ -9,7 +9,6 @@ from image2structure.run_specs import _RUNNER_REGISTRY
 
 
 class TestRun:
-
     def setup_method(self, method):
         load_dotenv()
         self.data_path = os.path.join(

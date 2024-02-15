@@ -27,7 +27,6 @@ class DownloadError(Exception):
 
 
 class Fetcher(ABC):
-
     def __init__(
         self,
         date_created_after: datetime.datetime,
