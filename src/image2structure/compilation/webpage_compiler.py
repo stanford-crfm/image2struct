@@ -13,13 +13,11 @@ class WebpageCompiler(Compiler):
         port: int,
         timeout: int,
         verbose: bool,
-        num_max_actions: int,
         screenshot_options: ScreenshotOptions,
     ):
         self._port = port
         self._timeout = timeout
         self._verbose = verbose
-        self._num_max_actions = num_max_actions
         self._screenshot_options = screenshot_options
 
     def compile(self, data_path: str, destination_path: str) -> Dict[str, Any]:
@@ -54,7 +52,6 @@ class WebpageCompiler(Compiler):
         # Take a screenshot of a random page
         try:
             scheenshot_options = self._screenshot_options
-            scheenshot_options.num_actions_range = (0, self._num_max_actions)
             actions = save_random_screenshot(
                 destination_path, port=self._port, options=scheenshot_options
             )

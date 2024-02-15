@@ -1,4 +1,4 @@
-from typing import Optional, Tuple, Dict, Any
+from typing import Optional, Tuple, Dict, Any, Callable
 from PIL import Image
 
 import numpy as np
@@ -16,7 +16,7 @@ class NonTrivialRenderingFilter(RenderingFilter):
 
     def __init__(
         self,
-        hashfunc: imagehash.ImageHash = imagehash.average_hash,
+        hashfunc: Callable = imagehash.average_hash,
         hash_size_white_imgs: int = 8,
         hash_size_other_imgs: int = 5,
         max_background_percentage: float = 95.0,
@@ -28,12 +28,14 @@ class NonTrivialRenderingFilter(RenderingFilter):
             hashfunc: The hash function to use for comparing images.
             hash_size_white_imgs: The hash size to use for white images.
             hash_size_other_imgs: The hash size to use for other images.
-            max_background_percentage: The maximum percentage of white pixels for a page to be considered a landing page.
-            threshold_white_percentage: The maximum percentage of white pixels for a page to be considered a landing page.
+            max_background_percentage: The maximum percentage of white pixels for a page
+                to be considered a landing page.
+            threshold_white_percentage: The maximum percentage of white pixels for a page
+                to be considered a landing page.
             verbose: Whether to print the progress.
         """
         super().__init__("NonTrivialRenderingFilter")
-        self.hashfunc: imagehash.ImageHash = hashfunc
+        self.hashfunc: Callable = hashfunc
         self.hash_size_white_imgs: int = hash_size_white_imgs
         self.hash_size_other_imgs: int = hash_size_other_imgs
         self.max_background_percentage: float = max_background_percentage
@@ -103,7 +105,7 @@ class NonTrivialRenderingFilter(RenderingFilter):
         unique_colors, counts = np.unique(
             [tuple(row) for row in pixels], axis=0, return_counts=True
         )
-        most_frequent_color = unique_colors[np.argmax(counts)]
+        # most_frequent_color = unique_colors[np.argmax(counts)]
         frequency_of_most_frequent = np.max(counts)
 
         # Calculate the total number of pixels

@@ -16,7 +16,6 @@ class TestWebpageCompiler:
             port=1234,
             timeout=30,
             verbose=False,
-            num_max_actions=0,
             screenshot_options=ScreenshotOptions(),
         )
         self.data_path: str = os.path.join(
@@ -31,7 +30,7 @@ class TestWebpageCompiler:
 
     def test_compile_valid_repos(self):
         repo_path: str = os.path.join(self.data_path, "valid_repo")
-        self.image_path: str = os.path.join(repo_path, "output.png")
+        self.image_path = os.path.join(repo_path, "output.png")
         ref_image_path: str = os.path.join(repo_path, "output_ref.png")
 
         assert not os.path.exists(self.image_path)
@@ -62,7 +61,7 @@ class TestWebpageCompiler:
 
     def test_closes_port(self):
         repo_path: str = os.path.join(self.data_path, "valid_repo")
-        self.image_path: str = os.path.join(repo_path, "output.png")
+        self.image_path = os.path.join(repo_path, "output.png")
 
         self.compiler.compile(repo_path, self.image_path)
         assert not JekyllServer.is_port_in_use(1234)

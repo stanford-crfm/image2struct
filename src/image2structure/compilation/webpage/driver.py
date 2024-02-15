@@ -1,9 +1,6 @@
 from selenium import webdriver
 import selenium.common.exceptions
-import random
 import time
-from typing import List
-from .action import Action
 
 
 def init_driver(
@@ -48,22 +45,17 @@ class ScreenshotOptions:
     """The delay between each action in milliseconds"""
     delay_between_each_action_ms: int = 1000
 
-    """The range of the number of actions to perform"""
-    num_actions_range: tuple[int, int] = (0, 3)
-
 
 def save_random_screenshot(
     path: str, port: int, options: ScreenshotOptions = ScreenshotOptions()
-) -> List[Action]:
+):
     """Save a screenshot of a random page
 
     Args:
         path (str): The path to save the screenshot
         port (int): The port to use for the website.
-        options (ScreenshotOptions, optional): The options to use for taking the screenshot. Defaults to ScreenshotOptions().
-
-    Returns:
-        List[Action]: A list of actions performed to take the screenshot
+        options (ScreenshotOptions, optional): The options to use for taking the screenshot.
+            Defaults to ScreenshotOptions().
 
     Raises:
         ValueError: If the path does not end with .png
@@ -81,26 +73,15 @@ def save_random_screenshot(
     except Exception as e:
         raise Exception(f"An unknown error occurred while initializing the driver: {e}")
 
-    num_actions = random.randint(*options.num_actions_range)
-    actions: List[Action] = [
-        Action.get_random_action(driver, port) for _ in range(num_actions)
-    ]
-    actions = list(set(actions))
-    for action in actions:
-        action.perform(driver)
-        time.sleep(options.delay_between_each_action_ms / 1000.0)
-
     # Take a screenshot of the page
     driver.save_screenshot(path)
     close_driver(driver)
-
-    return actions
 
 
 if __name__ == "__main__":
     print("Demo: Taking a screenshot of a random page")
     print("A website should be running at http://localhost:4000 or this will crash\n")
-    save_random_screenshot("screenshot.png")
+    save_random_screenshot("screenshot.png", port=4000)
     print("Screenshot saved as screenshot.png")
 
     # Delete the screenshot after 15 seconds

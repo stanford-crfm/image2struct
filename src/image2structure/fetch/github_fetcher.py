@@ -2,7 +2,7 @@ from .fetcher import Fetcher, DownloadError, ScrapeError, ScrapeResult
 
 
 import requests
-from typing import Optional, Any, Dict, List
+from typing import Dict, List
 import datetime
 import os
 import subprocess
@@ -16,7 +16,7 @@ def get_headers() -> Dict[str, str]:
         Dict[str, str]: The headers for the GitHub API
     """
     return {
-        "Authorization": os.getenv("GITHUB_TOKEN"),
+        "Authorization": str(os.getenv("GITHUB_TOKEN")),
         "Accept": "application/vnd.github+json",
     }
 
@@ -77,7 +77,7 @@ class GitHubFetcher(Fetcher):
             "created": (
                 f">={self._date_created_after.strftime('%Y-%m-%d')}"
                 if self._date_created_before is None
-                else f"{self._date_created_after.strftime('%Y-%m-%d')}..{self._date_created_before.strftime('%Y-%m-%d')}"
+                else f"{self._date_created_after.strftime('%Y-%m-%d')}..{self._date_created_before.strftime('%Y-%m-%d')}"  # noqa: E501
             ),
         }
         if self._subcategory.lower() not in [
@@ -92,7 +92,7 @@ class GitHubFetcher(Fetcher):
         search_query += " ".join(
             [f"{key}:{value}" for key, value in query_parameters.items()]
         )
-        url = f"https://api.github.com/search/repositories?q={search_query}&per_page={num_instances}&page={self._page}&sort=updated&order=desc"
+        url = f"https://api.github.com/search/repositories?q={search_query}&per_page={num_instances}&page={self._page}&sort=updated&order=desc"  # noqa: E501
 
         # Increment the page number for the next query
         # Check that we won't exceed the maximum number of results

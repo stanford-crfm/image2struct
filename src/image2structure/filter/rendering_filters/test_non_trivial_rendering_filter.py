@@ -1,4 +1,3 @@
-from typing import List
 from PIL import Image
 
 import imagehash
@@ -116,7 +115,7 @@ class TestNonTrivialRenderingFilter:
 
         # Add one white pixel
         arr[0, 0, :] = 255
-        image_path: str = self.save_image(Image.fromarray(arr), "reject.png")
+        image_path = self.save_image(Image.fromarray(arr), "reject.png")
         accepted, infos = self.filter.check_and_accept_image(image_path)
         assert not accepted
         assert "white_pixels_ratio" in infos

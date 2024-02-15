@@ -1,4 +1,4 @@
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Any
 
 import os
 
@@ -59,7 +59,7 @@ def filter_files_by_extension(
     Returns:
         Dict[str, List[str]]: The filtered files
     """
-    filtered_files = {ext: [] for ext in extensions}
+    filtered_files: Dict[str, List[str]] = {ext: [] for ext in extensions}
     filtered_files["others"] = []
 
     for file in files:
@@ -91,7 +91,7 @@ def count_num_lines_in_files(repo_path: str, files: List[str]) -> int:
         try:
             with open(os.path.join(repo_path, file), "r") as f:
                 num_lines += len(f.readlines())
-        except:
+        except Exception:
             # An error occured, so we are just going to add a lot of lines so that this repository is not considered
             num_lines += LARGE_NUM_LINES
 
@@ -156,7 +156,7 @@ class RepoFilter(FileFilter):
         self.max_num_lines_code = max_num_lines_code
         self.max_num_lines_style = max_num_lines_style
 
-    def analyze_repo(self, repo_path: str) -> Dict[str, Dict[str, int]]:
+    def analyze_repo(self, repo_path: str) -> Dict[str, Any]:
         """Analyze a repository
         Return the number of lines and files in the repository and the number of lines in each file type.
 
@@ -217,7 +217,7 @@ class RepoFilter(FileFilter):
             Dict[str, Dict[str, int]]: The analysis of the repository
         """
         # Analyze the repository
-        analysis: Dict[str, Dict[str, int]] = self.analyze_repo(file_path)
+        analysis: Dict[str, Dict[str, Any]] = self.analyze_repo(file_path)
 
         # Check if the repository passes the filter
         passes_filter = (

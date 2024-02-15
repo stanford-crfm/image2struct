@@ -3,18 +3,16 @@ from typing import TypeVar, Dict, Callable, Union
 import datetime
 
 from image2structure.runner import Runner
-from image2structure.fetch.fetcher import Fetcher
-from image2structure.filter.file_filters.file_filter import FileFilter
-from image2structure.compilation.compiler import Compiler
-from image2structure.filter.rendering_filters.rendering_filter import RenderingFilter
 
 
 F = TypeVar("F", bound=Callable[..., Runner])
 
-_RUNNER_REGISTRY: Dict[str, Dict[str, Union[F, Dict[str, type]]]] = {}
+_RUNNER_REGISTRY: Dict[
+    str, Dict[str, Union[Callable[..., Runner], Dict[str, str]]]
+] = {}
 
 
-def register_runner(name: str, args_info=None):
+def register_runner(name: str, args_info=None) -> Callable[[F], F]:
     """Register a runner with argument metadata."""
     args_info = args_info or {}
 
@@ -78,7 +76,6 @@ def get_webpage_runner(
         port=port,
         timeout=timeout,
         verbose=verbose,
-        num_max_actions=0,  # Random clicks are disabled
         screenshot_options=ScreenshotOptions(),
     )
 

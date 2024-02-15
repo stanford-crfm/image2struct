@@ -124,7 +124,7 @@ def run(runner: Runner, args: argparse.Namespace) -> None:
                     accepted = filter.filter(scrape_result)
                     if not accepted:
                         print(
-                            f"Data did not pass fetcher filter {filter.name}: {infos}"
+                            f"Data did not pass fetcher filter {filter.name}: {scrape_result}"
                         )
                         should_continue = True
                         break

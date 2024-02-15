@@ -5,7 +5,6 @@ import shutil
 
 from image2structure.collect import run, get_args_parser, get_runner_from_args
 from image2structure.runner import Runner
-from image2structure.run_specs import _RUNNER_REGISTRY
 
 
 class TestRun:
