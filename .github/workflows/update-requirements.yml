@@ -71,6 +71,8 @@ jobs:
         run: ./pre-commit.sh
       - name: Run tests
         run: pytest
+        env:
+          TOKEN_GITHUB: ${{ secrets.TOKEN_GITHUB }}
       - name: Create pull request
         uses: peter-evans/create-pull-request@v5
         with:
