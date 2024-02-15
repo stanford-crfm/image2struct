@@ -16,7 +16,7 @@ def get_headers() -> Dict[str, str]:
         Dict[str, str]: The headers for the GitHub API
     """
     return {
-        "Authorization": str(os.getenv("GITHUB_TOKEN")),
+        "Authorization": str(os.getenv("TOKEN_GITHUB")),
         "Accept": "application/vnd.github+json",
     }
 

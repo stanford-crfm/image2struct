@@ -68,5 +68,6 @@ jobs:
       - name: Run tests
         run: source venv/bin/activate && pytest --durations=20
         env:
+          TOKEN_GITHUB: ${{ secrets.TOKEN_GITHUB }}
           TEST: ${{ matrix.test }}
           VERSION: ${{ github.head_ref || 'main' }}
