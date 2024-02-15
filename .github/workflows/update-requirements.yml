@@ -12,6 +12,12 @@ on:
     paths:
       - "setup.cfg"
       - '.github/workflows/update-requirements.yml'
+  pull_request:
+    branches:
+      - '**'
+    paths:
+      - "setup.cfg"
+      - '.github/workflows/update-requirements.yml'
 
 jobs:
   update-requirements:
@@ -35,12 +41,12 @@ jobs:
           restore-keys: |
             pip-
       - name: Upgrade pip
-        run: pip install --upgrade pip
+        run: pip install --upgrade pip setuptools wheel
       - name: Install PyTorch manually
         # PyTorch has to be installed manually in a separate step with --no-cache-dir
         # to avoid pip getting killed because PyTorch is too big
         # See: https://stackoverflow.com/a/54329850
-        run: pip install --upgrade setuptools && pip install torch==2.0.1+cu117 torchvision==0.15.2 --index-url https://download.pytorch.org/whl/cu117 --no-cache-dir
+        run: pip install torch==2.0.1+cu117 torchvision==0.15.2 --index-url https://download.pytorch.org/whl/cu117 --no-cache-dir
       - name: Upgrade dependencies for Dependabot alerts
         run: pip install -e ".[all,dev]"
       - name: Verify dependencies
@@ -65,8 +71,18 @@ jobs:
         #     push events occur.
       - name: Run linter
         run: ./pre-commit.sh
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.0
+      - name: Install additional dependencies
+        run: sudo sh ./install.sh
       - name: Run tests
-        run: pytest
+        run: pytest --durations=20
+        env:
+          TOKEN_GITHUB: ${{ secrets.TOKEN_GITHUB }}
+          TEST: ${{ matrix.test }}
+          VERSION: ${{ github.head_ref || 'main' }}
       - name: Create pull request
         uses: peter-evans/create-pull-request@v5
         with:
