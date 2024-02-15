@@ -10,7 +10,7 @@ sudo sh ./install.sh
 # On Mac OS, skip installing pytorch with CUDA because CUDA is not supported
 if [[ $OSTYPE != 'darwin'* ]]; then
   # Manually install pytorch with `--no-cache-dir` to avoid pip getting killed: https://stackoverflow.com/a/54329850
-  pip install torch==2.0.1 torchvision==0.15.2 --index-url https://download.pytorch.org/whl/cu117 --no-cache-dir
+  pip install torch==2.0.1+cu117 torchvision==0.15.2 --index-url https://download.pytorch.org/whl/cu117 --no-cache-dir
 fi
 # Install all pinned dependencies
 pip install -r requirements.txt
