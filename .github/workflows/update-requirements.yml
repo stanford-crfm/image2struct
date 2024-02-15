@@ -13,6 +13,8 @@ on:
       - "setup.cfg"
       - '.github/workflows/update-requirements.yml'
   pull_request:
+    branches:
+      - '**'
     paths:
       - "setup.cfg"
       - '.github/workflows/update-requirements.yml'
