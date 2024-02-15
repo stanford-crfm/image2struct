@@ -122,7 +122,7 @@ class GitHubFetcher(Fetcher):
                     .replace("/", "_")
                     .replace(".github.io", "")
                     .replace(".", "_"),
-                    additional_info=item,
+                    additional_info={**item, "user": item["owner"]["id"]},
                 )
                 for item in response.json()["items"]
             ]
@@ -131,15 +131,12 @@ class GitHubFetcher(Fetcher):
             time.sleep(10)
             raise ScrapeError(f"Failed to retrieve data: {response.status_code}")
 
-    def download(
-        self, download_path: str, file_name: str, scrape_result: ScrapeResult
-    ) -> None:
+    def download(self, download_path: str, scrape_result: ScrapeResult) -> None:
         """
         Download the data from the given scrape result to the given destination path.
 
         Args:
             download_path: The path to save the downloaded data to.
-            file_name: Name of the file
             scrape_result: The result of the scraping.
 
         Returns:
@@ -149,7 +146,7 @@ class GitHubFetcher(Fetcher):
             DownloadError: If the download fails.
         """
         repo_url: str = scrape_result.download_url
-        repo_name: str = file_name
+        repo_name: str = scrape_result.instance_name
 
         try:
             # Ensure the download path exists

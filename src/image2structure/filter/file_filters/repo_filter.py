@@ -148,6 +148,7 @@ class RepoFilter(FileFilter):
             max_num_lines_code (int): The maximum number of lines of code in the repository
             max_num_lines_style (int): The maximum number of lines of style in the repository (css)
         """
+        super().__init__(name="RepoFilter")
         self.min_num_lines = min_num_lines
         self.has_more_than_readme = has_more_than_readme
         self.max_num_files_code = max_num_files_code

@@ -32,6 +32,7 @@ class NonTrivialRenderingFilter(RenderingFilter):
             threshold_white_percentage: The maximum percentage of white pixels for a page to be considered a landing page.
             verbose: Whether to print the progress.
         """
+        super().__init__("NonTrivialRenderingFilter")
         self.hashfunc: imagehash.ImageHash = hashfunc
         self.hash_size_white_imgs: int = hash_size_white_imgs
         self.hash_size_other_imgs: int = hash_size_other_imgs

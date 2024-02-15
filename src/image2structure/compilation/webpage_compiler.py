@@ -37,6 +37,9 @@ class WebpageCompiler(Compiler):
 
         # Check that the repo path exists
         if not os.path.exists(data_path):
+            import time
+
+            time.sleep(10)
             raise CompilationError(f"Path does not exist: {data_path}")
 
         # Start the Jekyll server

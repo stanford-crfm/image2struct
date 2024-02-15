@@ -62,8 +62,8 @@ class TestGitHubFetcher:
 
         # Download the first result
         tmp_path = os.path.dirname(__file__)
-        fetcher.download(tmp_path, "test_repo", results[0])
-        repo_path: str = os.path.join(tmp_path, "test_repo")
+        fetcher.download(tmp_path, results[0])
+        repo_path: str = os.path.join(tmp_path, results[0].instance_name)
         assert os.path.exists(repo_path)
         shutil.rmtree(repo_path)
 
@@ -83,5 +83,5 @@ class TestGitHubFetcher:
                 instance_name="fakerepo",
                 additional_info={},
             )
-            self.fetcher.download("invalid_path", "test_repo", result)
-        assert not os.path.exists("invalid_path/test_repo")
+            self.fetcher.download("invalid_path", result)
+        assert not os.path.exists("invalid_path/fake_repo")

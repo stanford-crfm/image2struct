@@ -10,6 +10,7 @@ from image2structure.fetch.fetcher import ScrapeResult
 class GitHubFetchFilter(FetchFilter):
 
     def __init__(self) -> None:
+        super().__init__("GitHubFetchFilter")
         self._users_set = set()
         self._repositories_set = set()
 

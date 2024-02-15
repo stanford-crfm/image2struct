@@ -11,6 +11,14 @@ class RenderingFilterError(FilterError):
 class RenderingFilter(ABC):
     """This class is responsible for accepting or rejecting an image generated"""
 
+    def __init__(self, name: str):
+        """Initialize the filter with the name of the filter.
+
+        Args:
+            name (str): The name of the filter.
+        """
+        self.name = name
+
     @abstractmethod
     def check_and_accept_image(self, image_path: str) -> Tuple[bool, Dict[str, Any]]:
         """Check if the image meets the requirements and accept it if it does.

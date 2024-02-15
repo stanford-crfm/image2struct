@@ -4,9 +4,9 @@ import datetime
 
 from image2structure.runner import Runner
 from image2structure.fetch.fetcher import Fetcher
-from image2structure.filter.file_filter.file_filter import FileFilter
+from image2structure.filter.file_filters.file_filter import FileFilter
 from image2structure.compilation.compiler import Compiler
-from image2structure.filter.rendering_filter.rendering_filter import RenderingFilter
+from image2structure.filter.rendering_filters.rendering_filter import RenderingFilter
 
 
 F = TypeVar("F", bound=Callable[..., Runner])
@@ -40,22 +40,39 @@ def get_webpage_runner(
     """Get a runner for webpage data."""
     from image2structure.compilation.webpage_compiler import WebpageCompiler
     from image2structure.fetch.github_fetcher import GitHubFetcher
-    from image2structure.filter.rendering_filter.new_image_post_processor import (
-        NewImagePostProcessor,
+    from image2structure.filter.rendering_filters.non_trivial_rendering_filter import (
+        NonTrivialRenderingFilter,
+    )
+    from image2structure.filter.file_filters.repo_filter import (
+        RepoFilter,
+    )
+    from image2structure.filter.fetch_filters.github_fetch_filter import (
+        GitHubFetchFilter,
     )
     from image2structure.compilation.webpage.driver import ScreenshotOptions
+    import imagehash
 
     fetcher = GitHubFetcher(
         date_created_after=date_created_after,
         date_created_before=date_created_before,
         subcategory=subcategory,
         timeout=timeout,
-        port=port,
         max_size_kb=max_size_kb,
         verbose=verbose,
     )
 
-    file_filters = []
+    fetch_filters = [GitHubFetchFilter()]
+
+    file_filters = [
+        RepoFilter(
+            min_num_lines=10,
+            has_more_than_readme=True,
+            max_num_files_code=5,
+            max_num_assets=5,
+            max_num_lines_code=1000,
+            max_num_lines_style=2000,
+        )
+    ]
 
     compiler = WebpageCompiler(
         port=port,
@@ -65,8 +82,21 @@ def get_webpage_runner(
         screenshot_options=ScreenshotOptions(),
     )
 
-    post_processors = [
-        NewImagePostProcessor({"max_white_ratio": 0.99, "max_similarity_ratio": 0.99})
+    rendering_filters = [
+        NonTrivialRenderingFilter(
+            hashfunc=imagehash.average_hash,
+            hash_size_white_imgs=8,
+            hash_size_other_imgs=5,
+            max_background_percentage=95.0,
+            threshold_white_percentage=50.0,
+            verbose=False,
+        )
     ]
 
-    return Runner(fetcher, file_filters, compiler, post_processors)
+    return Runner(
+        fetcher=fetcher,
+        fetch_filters=fetch_filters,
+        file_filters=file_filters,
+        compiler=compiler,
+        rendering_filters=rendering_filters,
+    )
