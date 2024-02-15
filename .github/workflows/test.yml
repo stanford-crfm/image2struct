@@ -36,7 +36,8 @@ jobs:
         run: source venv/bin/activate && sudo sh ./install.sh
       - name: Run static code checks
         run: source venv/bin/activate && ./pre-commit.sh
-      # TODO: Add a small run here
+      - name: Collect 10 webpages
+        run: source venv/bin/activate && image2structure-collect --category html --num-instances 10 webpage --timeout 30 --port 4000 --max_size_kb 100
 
   test:
     name: Run all tests
