@@ -7,9 +7,9 @@ from image2structure.runner import Runner
 
 F = TypeVar("F", bound=Callable[..., Runner])
 
-_RUNNER_REGISTRY: Dict[str, Dict[str, Union[Callable[..., Runner], Dict[str, str]]]] = (
-    {}
-)
+_RUNNER_REGISTRY: Dict[
+    str, Dict[str, Union[Callable[..., Runner], Dict[str, str]]]
+] = {}
 
 
 def register_runner(name: str, args_info=None) -> Callable[[F], F]:
