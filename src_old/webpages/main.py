@@ -7,6 +7,7 @@ from PIL import Image
 from typing import Optional, Tuple, Dict, Any
 import json
 import time
+from dotenv import load_dotenv
 
 from deployment.server import JekyllServer
 from fetcher.search import clone_repo, search_github_repos

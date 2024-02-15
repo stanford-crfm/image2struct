@@ -1,7 +1,7 @@
 import subprocess
 import os
 import signal
-from typing import Any, Optional
+from typing import Optional
 import time
 import socket
 import threading
@@ -31,7 +31,10 @@ class JekyllServer:
     def setup_gemfile(self):
         # Check if Gemfile exists, if not, copy Gemfile.default to Gemfile
         if not os.path.exists(f"{self.repo_path}/Gemfile"):
-            os.system(f"cp Gemfile.default {self.repo_path}/Gemfile")
+            default_gemfile_path = os.path.join(
+                os.path.dirname(os.path.realpath(__file__)), "Gemfile.default"
+            )
+            os.system(f"cp {default_gemfile_path} {self.repo_path}/Gemfile")
             if self.verbose:
                 print("Copied Gemfile.default to Gemfile")
             return
@@ -50,25 +53,39 @@ class JekyllServer:
     def setup_config(self):
         # Check if _config.yml exists, if not, copy _config.default.yml to _config.yml
         if not os.path.exists(f"{self.repo_path}/_config.yml"):
-            os.system(f"cp _config.default.yml {self.repo_path}/_config.yml")
+            default_config_path = os.path.join(
+                os.path.dirname(os.path.realpath(__file__)), "_config.default.yml"
+            )
+            os.system(f"cp {default_config_path} {self.repo_path}/_config.yml")
             if self.verbose:
                 print("Copied _config.default.yml to _config.yml")
-            return
+        # Search for line starting with "port:" and replace it with "port: <port>"
+        with open(f"{self.repo_path}/_config.yml", "r") as file:
+            lines = file.readlines()
+        with open(f"{self.repo_path}/_config.yml", "w") as file:
+            for line in lines:
+                if line.startswith("port"):
+                    file.write(f"port: {self.port}\n")
+                else:
+                    file.write(line)
 
-    def is_port_in_use(port):
+    @staticmethod
+    def is_port_in_use(port: int) -> bool:
         """Check if a port is in use on localhost."""
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             return s.connect_ex(("localhost", port)) == 0
 
-    def kill_process_using_port(self, port):
+    def kill_process_using_port(self, port: int):
         """Find and kill the process using the specified port."""
         command = f"lsof -ti:{port} | xargs kill -9"
         os.system(command)
         if self.verbose:
             print(f"Killed process using port {port}.")
 
-    def stream_output(self, process):
+    def stream_output(self, process: subprocess.Popen):
         """Read from stdout and stderr streams and print."""
+        assert process.stdout is not None
+        assert process.stderr is not None
         while True:
             output = process.stdout.readline()
             if not output:
@@ -123,7 +140,8 @@ class JekyllServer:
         output_thread.join(timeout=timeout)
 
         if output_thread.is_alive():
-            # If the thread is still alive after the timeout, the server did not start successfully within the timeout period
+            # If the thread is still alive after the timeout, the server did not start
+            # successfully within the timeout period
             print("Timeout reached without detecting server start.")
             self.process.terminate()  # Terminate the process if it's still running
             output_thread.join()  # Ensure the thread is cleaned up
@@ -170,51 +188,3 @@ class JekyllServer:
                 print("Jekyll server stopped.")
         elif self.verbose:
             print("Jekyll server is not running.")
-
-
-def main(path: str, repo_name: str):
-    from fetcher.search import clone_repo
-    import time
-
-    clone_url: str = "https://github.com/clickerultimate/clickerultimate.github.io.git"
-    delay_alive: int = 30
-
-    # Clone the repository
-    print(f"Cloning {clone_url} to {path}/{repo_name}")
-    clone_repo(clone_url, path, repo_name)
-
-    # Start the Jekyll server
-    server = JekyllServer(f"{path}/{repo_name}", verbose=True)
-    server.start()
-
-    # Stop the Jekyll server after delay_alive seconds
-    print(f"Keeping the server alive for {delay_alive} seconds...")
-    time.sleep(delay_alive)
-    server.stop()
-
-    # Delete the repository
-    print(f"Deleting {path}/{repo_name}")
-    os.system(f"rm -rf {path}/{repo_name}")
-    print("Repository deleted.")
-
-
-if __name__ == "__main__":
-    path: str = os.path.dirname(os.path.realpath(__file__))
-    repo_name: str = "repo_demo"
-
-    try:
-        main(path, repo_name)
-    except KeyboardInterrupt:
-        print("Interrupted by the user.")
-        answer = None
-        while answer not in ("y", "n"):
-            answer = input("Do you want to delete the repository? (y/n): ").lower()
-        if answer == "y":
-            os.system(f"rm -rf {path}/{repo_name}")
-            print("Repository deleted.")
-        else:
-            print("Repository not deleted.")
-    except Exception as e:
-        print(f"An error occurred: {e}")
-        os.system(f"rm -rf {path}/{repo_name}")
-        print("Repository deleted.")

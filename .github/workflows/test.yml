@@ -19,6 +19,10 @@ jobs:
         python-version: ["3.9", "3.10"]
     steps:
       - uses: actions/checkout@v2
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+            ruby-version: 3.0
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:
@@ -36,7 +40,8 @@ jobs:
         run: source venv/bin/activate && sudo sh ./install.sh
       - name: Run static code checks
         run: source venv/bin/activate && ./pre-commit.sh
-      # TODO: Add a small run here
+      - name: Collect 10 webpages
+        run: source venv/bin/activate && image2structure-collect --category html --num-instances 10 webpage --timeout 30 --port 4000 --max_size_kb 100
 
   test:
     name: Run all tests
@@ -50,7 +55,12 @@ jobs:
             sudo rm -rf /opt/ghc
             df -h
       - uses: actions/checkout@v2
-      - uses: actions/setup-python@v4
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+            ruby-version: 3.0
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
       - uses: actions/cache@v2
@@ -67,5 +77,6 @@ jobs:
       - name: Run tests
         run: source venv/bin/activate && pytest --durations=20
         env:
+          TOKEN_GITHUB: ${{ secrets.TOKEN_GITHUB }}
           TEST: ${{ matrix.test }}
           VERSION: ${{ github.head_ref || 'main' }}
