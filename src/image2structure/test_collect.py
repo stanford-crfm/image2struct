@@ -21,7 +21,7 @@ class TestRun:
         args = get_args_parser()[0].parse_args(
             [
                 "--category",
-                "html",
+                "css",
                 "--destination-path",
                 self.data_path,
                 "--timeout",
@@ -29,18 +29,18 @@ class TestRun:
                 "--num-instances",
                 "1",
                 "--num-instances-at-once",
-                "25",
+                "5",
                 "--date-from",
-                "2021-01-01",
-                "--date-to",
                 "2022-01-01",
+                "--date-to",
+                "2022-01-02",
                 "webpage",
                 "--port",
                 "8000",
                 "--timeout",
-                "30",
+                "10",
                 "--max_size_kb",
-                "10000",
+                "10",
             ]
         )
         runner: Runner = get_runner_from_args(args)
