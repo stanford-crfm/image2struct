@@ -69,10 +69,14 @@ jobs:
         #     push events occur.
       - name: Run linter
         run: ./pre-commit.sh
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.0
       - name: Install additional dependencies
         run: sudo sh ./install.sh
       - name: Run tests
-        run: pytest
+        run: pytest --durations=20
         env:
           TOKEN_GITHUB: ${{ secrets.TOKEN_GITHUB }}
           TEST: ${{ matrix.test }}
