@@ -1,8 +1,9 @@
-from typing import List, Dict
+from typing import List, Dict, Any
 
-import arxivscraper
+from image2structure.fetch.arxivscraper.arxivscraper import Scraper
 import datetime
 import os
+import math
 
 from image2structure.fetch.fetcher import (
     Fetcher,
@@ -32,23 +33,33 @@ class ArxivFetcher(Fetcher):
 
         # Store the remaining results as we cannot fetch X results but only
         # results from a given date range
-        self._remaining_results: List[Dict] = []
+        self._remaining_results: List[Dict[str, str]] = []
+
+        # Scraper
+        self._scraper = Scraper(
+            category=self._subcategory,
+            timeout=self._timeout,
+        )
 
         # Set internal dates to separate the search into multiple queries
         # This will be decremented by _delay_days before each query
-        self._delay_days: int = 1
         self._date_created_before_internal = date_created_before + datetime.timedelta(
-            days=self._delay_days
+            days=1
         )
         self._date_created_after_internal = date_created_before
 
-    def change_internal_dates(self):
+        # Set the estimate for the number of papers per day
+        # This is used to determine how many days to scrape in the next query
+        # TODO: Use EMA for this
+        self._estimate_paper_per_day: float = 100.0
+        self._estimate_day_count: int = 1
+
+    def change_internal_dates(self, days: int = 1):
         """Change the internal dates for the next query"""
         self._page = 1
         self._date_created_before_internal = self._date_created_after_internal
         self._date_created_after_internal = (
-            self._date_created_after_internal
-            - datetime.timedelta(days=self._delay_days)
+            self._date_created_after_internal - datetime.timedelta(days=days)
         )
         if self._date_created_after_internal < self._date_created_after:
             raise ScrapeError("No more results available for the given date range.")
@@ -68,18 +79,26 @@ class ArxivFetcher(Fetcher):
         """
 
         while len(self._remaining_results) < num_instances:
+            num_papers_needed: int = num_instances - len(self._remaining_results)
+            estimate_num_days: int = max(
+                1, int(math.ceil(num_papers_needed / self._estimate_paper_per_day))
+            )
             # Need to scrape some more
-            self.change_internal_dates()
-            scraper = arxivscraper.Scraper(
-                category=self._subcategory,
+            self.change_internal_dates(days=estimate_num_days)
+            outputs: List[Dict[str, Any]] = self._scraper.scrape(
                 date_from=self._date_created_after_internal,
                 date_until=self._date_created_before_internal,
-                t=self._timeout,
             )
-            outputs = scraper.scrape()
-            if not isinstance(outputs, list) or len(outputs) == 0:
-                # Usually happens when we make too many requests
-                raise ScrapeError(f"Invalid output from arxivscraper: {outputs}")
+
+            # Update the estimate
+            self._estimate_paper_per_day = (
+                self._estimate_paper_per_day * self._estimate_day_count + len(outputs)
+            ) / (self._estimate_day_count + estimate_num_days)
+            self._estimate_day_count += estimate_num_days
+
+            if len(outputs) == 0:
+                continue
+
             assert isinstance(outputs[0], dict)
             self._remaining_results.extend(outputs)
 
@@ -99,6 +118,7 @@ class ArxivFetcher(Fetcher):
 
         # Remove the results we just used
         self._remaining_results = self._remaining_results[num_instances:]
+        print("Finished scraping")
 
         return results
 

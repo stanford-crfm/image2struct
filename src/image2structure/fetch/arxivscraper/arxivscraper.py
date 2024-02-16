@@ -9,19 +9,12 @@ from __future__ import print_function
 import xml.etree.ElementTree as ET
 import datetime
 import time
-import sys
-from typing import Dict, List
+from typing import Dict, List, Any, Optional
 
-PYTHON3 = sys.version_info[0] == 3
-if PYTHON3:
-    from urllib.parse import urlencode
-    from urllib.request import urlopen
-    from urllib.error import HTTPError
-else:
-    from urllib import urlencode
-    from urllib2 import HTTPError, urlopen
+from urllib.request import urlopen
+from urllib.error import HTTPError
 
-from .constants import OAI, ARXIV, BASE
+from image2structure.fetch.arxivscraper.constants import OAI, ARXIV, BASE
 
 
 class Record(object):
@@ -53,14 +46,14 @@ class Record(object):
             return (
                 self.xml.find(namespace + tag).text.strip().lower().replace("\n", " ")
             )
-        except:
+        except Exception:
             return ""
 
     def _get_name(self, parent, attribute) -> str:
         """Extracts author name from an xml field"""
         try:
             return parent.find(ARXIV + attribute).text.lower()
-        except:
+        except Exception:
             return "n/a"
 
     def _get_authors(self) -> List:
@@ -71,7 +64,7 @@ class Record(object):
         full_names = [a + " " + b for a, b in zip(first_names, last_names)]
         return full_names
 
-    def _get_affiliation(self) -> str:
+    def _get_affiliation(self) -> List[Any]:
         """Extract affiliation of authors"""
         authors = self.xml.findall(ARXIV + "authors/" + ARXIV + "author")
         try:
@@ -79,10 +72,10 @@ class Record(object):
                 author.find(ARXIV + "affiliation").text.lower() for author in authors
             ]
             return affiliation
-        except:
+        except Exception:
             return []
 
-    def output(self) -> Dict:
+    def output(self) -> Dict[str, Any]:
         """Data for each paper record"""
         d = {
             "title": self.title,
@@ -139,57 +132,87 @@ class Scraper(object):
     def __init__(
         self,
         category: str,
-        date_from: str = None,
-        date_until: str = None,
-        t: int = 30,
+        time_between_requests: float = 5.0,
+        time_between_503: float = 5.0,
         timeout: int = 300,
         filters: Dict[str, str] = {},
     ):
         self.cat = str(category)
-        self.t = t
+        self.time_between_requests = time_between_requests
+        self.time_between_503 = time_between_503
         self.timeout = timeout
-        DateToday = datetime.date.today()
-        if date_from is None:
-            self.f = str(DateToday.replace(day=1))
-        else:
-            self.f = date_from
-        if date_until is None:
-            self.u = str(DateToday)
-        else:
-            self.u = date_until
-        self.url = (
-            BASE
-            + "from="
-            + self.f
-            + "&until="
-            + self.u
-            + "&metadataPrefix=arXiv&set=%s" % self.cat
-        )
         self.filters = filters
         if not self.filters:
             self.append_all = True
         else:
             self.append_all = False
             self.keys = filters.keys()
+        self._last_request: (
+            datetime.datetime
+        ) = datetime.datetime.now() - datetime.timedelta(
+            seconds=self.time_between_requests
+        )
 
-    def scrape(self) -> List[Dict]:
-        t0 = time.time()
-        tx = time.time()
+    def scrape(
+        self, date_from: datetime.datetime, date_until: datetime.datetime
+    ) -> List[Dict[str, Any]]:
+        """
+        Fetch the records from ArXiv.org using Open Archives Initiative (OAI) protocol.
+
+        Args:
+            date_from: datetime.datetime
+                starting date in format 'YYYY-MM-DD'. Updated eprints are included even if
+                they were created outside of the given date range.
+            date_until: datetime.datetime
+                final date in format 'YYYY-MM-DD'. Updated eprints are included even if
+                they were created outside of the given date range.
+
+        Returns:
+            List[Dict]: The results of the scraping.
+
+        Raises:
+            ScrapeError: If the scraping fails.
+        """
         elapsed = 0.0
-        url = self.url
-        print(f"url: {self.url}")
-        ds = []
-        k = 1
-        while True:
+        print(
+            f"fetching records in  {self.cat} category from "
+            f"{date_from.strftime('%Y-%m-%d')} to {date_until.strftime('%Y-%m-%d')}..."
+        )
 
-            print("fetching up to ", 1000 * k, "records...")
+        # Build the url
+        url = (
+            BASE
+            + "from="
+            + date_from.strftime("%Y-%m-%d")
+            + "&until="
+            + date_until.strftime("%Y-%m-%d")
+            + "&metadataPrefix=arXiv&set=%s" % self.cat
+        )
+        accepted_records: List[Dict[str, Any]] = []
+        k = 1
+
+        ty: float
+        tx: float = time.time()
+        while True:
+            print("\t- fetching up to ", 1000 * k, "records...")
+            print("\t\t-> to url: ", url)
+            previous_num_records: int = len(accepted_records)
             try:
+                time_since_last_request: datetime.timedelta = (
+                    datetime.datetime.now() - self._last_request
+                )
+                if time_since_last_request.total_seconds() < self.time_between_requests:
+                    time.sleep(
+                        self.time_between_requests
+                        - time_since_last_request.total_seconds()
+                    )
                 response = urlopen(url)
+                self._last_request = datetime.datetime.now()
             except HTTPError as e:
                 if e.code == 503:
-                    to = int(e.hdrs.get("retry-after", 30))
-                    print("Got 503. Retrying after {0:d} seconds.".format(self.t))
-                    time.sleep(self.t)
+                    to = int(e.hdrs.get("retry-after", self.time_between_503))  # type: ignore
+                    print("\t\t-> Got 503. Retrying after {0:d} seconds.".format(to))
+                    time.sleep(to)
                     continue
                 else:
                     raise
@@ -198,24 +221,35 @@ class Scraper(object):
             root = ET.fromstring(xml)
             records = root.findall(OAI + "ListRecords/" + OAI + "record")
             for record in records:
-                meta = record.find(OAI + "metadata").find(ARXIV + "arXiv")
-                record = Record(meta).output()
+                elt: Optional[ET.Element] = record.find(OAI + "metadata")
+                assert elt is not None
+                meta = elt.find(ARXIV + "arXiv")
+                rec: Dict[str, Any] = Record(meta).output()
                 if self.append_all:
-                    ds.append(record)
+                    accepted_records.append(rec)
                 else:
                     save_record = False
                     for key in self.keys:
                         for word in self.filters[key]:
-                            if word.lower() in record[key]:
+                            if word.lower() in rec[key]:
                                 save_record = True
 
                     if save_record:
-                        ds.append(record)
+                        accepted_records.append(rec)
+
+            print(
+                "\t\t-> fetched ",
+                len(accepted_records) - previous_num_records,
+                " records.",
+            )
 
             try:
-                token = root.find(OAI + "ListRecords").find(OAI + "resumptionToken")
-            except:
-                return 1
+                elt_recs: Optional[ET.Element] = root.find(OAI + "ListRecords")
+                assert elt_recs is not None
+                token = elt_recs.find(OAI + "resumptionToken")
+            except Exception:
+                # No more results
+                break
             if token is None or token.text is None:
                 break
             else:
@@ -228,10 +262,7 @@ class Scraper(object):
             else:
                 tx = time.time()
 
-        t1 = time.time()
-        print("fetching is completed in {0:.1f} seconds.".format(t1 - t0))
-        print("Total number of records {:d}".format(len(ds)))
-        return ds
+        return accepted_records
 
 
 def search_all(df, col, *words):
