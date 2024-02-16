@@ -12,7 +12,7 @@ import time
 from typing import Dict, List, Any, Optional
 
 from urllib.request import urlopen
-from urllib.error import HTTPError
+from urllib.error import HTTPError, URLError
 
 from image2structure.fetch.arxivscraper.constants import OAI, ARXIV, BASE
 
@@ -215,7 +215,17 @@ class Scraper(object):
                     time.sleep(to)
                     continue
                 else:
-                    raise
+                    raise e
+            except URLError as e:
+                if "Temporary failure" in str(e):
+                    print(
+                        f"\t\t-> Got URLError {str(e)}. Retrying after {self.time_between_503} seconds."
+                    )
+                    time.sleep(to)
+                    continue
+                else:
+                    raise e
+
             k += 1
             xml = response.read()
             root = ET.fromstring(xml)
