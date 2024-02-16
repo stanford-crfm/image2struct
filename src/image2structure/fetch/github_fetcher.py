@@ -1,4 +1,9 @@
-from .fetcher import Fetcher, DownloadError, ScrapeError, ScrapeResult
+from image2structure.fetch.fetcher import (
+    Fetcher,
+    DownloadError,
+    ScrapeError,
+    ScrapeResult,
+)
 
 
 import requests
@@ -58,6 +63,8 @@ class GitHubFetcher(Fetcher):
             self._date_created_after_internal
             - datetime.timedelta(days=self._delay_days)
         )
+        if self._date_created_after_internal < self._date_created_after:
+            raise ScrapeError("No more results available for the given date range.")
 
     def scrape(self, num_instances: int) -> List[ScrapeResult]:
         """
