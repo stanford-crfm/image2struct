@@ -10,13 +10,18 @@ import re
 import numpy as np
 import random
 
-from image2structure.compilation.compiler import Compiler, CompilationError
+from image2structure.compilation.compiler import (
+    Compiler,
+    CompilationError,
+    CompilationResult,
+)
 from image2structure.compilation.utils import pdf_to_image
 from image2structure.compilation.tex.constants import (
     TEX_DELIMITERS,
     TEX_BEGIN,
     TEX_END,
 )
+from image2structure.fetch.fetcher import ScrapeResult
 
 
 class LatexCompiler(Compiler):
@@ -271,7 +276,7 @@ class LatexCompiler(Compiler):
         delimited_content: Dict[str, List[str]],
         assets_path: str,
         dest_path: str,
-    ) -> Dict[str, int]:
+    ) -> Tuple[List[CompilationResult], Dict[str, Any]]:
         """Given a dictionnary of delimited content, render all the images.
         Save them directly.
 
@@ -281,9 +286,11 @@ class LatexCompiler(Compiler):
             dest_path (str): Path to the destination folder
 
         Returns:
+            List[CompilationResult]: The result of the compilation.
             Dict[str, int]: Dictionnary mapping a category to the number of images rendered
         """
 
+        compilations: List[CompilationResult] = []
         num_done: Dict[str, int] = {}
 
         for category, list_of_content in delimited_content.items():
@@ -309,7 +316,9 @@ class LatexCompiler(Compiler):
                         continue
 
                     # Save the associated assets
+                    asset_paths: List[str] = []
                     asset_names = LatexCompiler.get_asset_names_used(tex_code)
+                    all_assets_saved: bool = True
                     for asset_name in asset_names:
                         asset_path = os.path.join(assets_path, asset_name)
                         new_asset_path = os.path.join(
@@ -317,18 +326,25 @@ class LatexCompiler(Compiler):
                         )
                         try:
                             shutil.copy(asset_path, new_asset_path)
+                            asset_paths.append(new_asset_path)
                         except FileNotFoundError:
                             # Could not copy one of the assets so ignore this tex_code
-                            continue
+                            all_assets_saved = False
+                    if not all_assets_saved:
+                        continue
 
                     # Save the image
-                    image.save(
+                    image_path: str = (
                         f"{dest_path}/images/{category}s/{category}_{num_images + offset}.png"
                     )
+                    image.save(image_path)
 
                     # Save the associated code
+                    code_path: str = (
+                        f"{dest_path}/contents/{category}s/{category}_{num_images + offset}.tex"
+                    )
                     with open(
-                        f"{dest_path}/contents/{category}s/{category}_{num_images + offset}.tex",
+                        code_path,
                         "w",
                     ) as f:
                         f.write(tex_code)
@@ -338,23 +354,40 @@ class LatexCompiler(Compiler):
                     if num_images >= num_max_image:
                         break
 
+                    # Save the compilation
+                    compilations.append(
+                        CompilationResult(
+                            data_path=code_path,
+                            rendering_path=image_path,
+                            assets_path=asset_paths,
+                            category=category,
+                        )
+                    )
+
                 # There was an error rendering or saving the code, go to the next code
                 except Exception:
                     continue
 
             num_done[category] = num_images
 
-        return num_done
+        return compilations, num_done
 
-    def compile(self, data_path: str, destination_path: str) -> Dict[str, Any]:
+    def compile(
+        self,
+        data_path: str,
+        destination_path: str,
+        scrape_result: Optional[ScrapeResult] = None,
+    ) -> Tuple[List[CompilationResult], Dict[str, Any]]:
         """
         Compile the given data into a webpage using Jekyll.
 
         Args:
             data_path: The path to the repository to compile.
             destination_path: The path to save the compiled data to.
+            scrape_result: The scrape that produced the data.
 
         Returns:
+            List[CompilationResult]: The result of the compilation.
             Dict[str, Any]: The information about the compilation.
 
         Raises:
@@ -397,13 +430,15 @@ class LatexCompiler(Compiler):
             random.shuffle(delimited_content[category])
 
         # 5. Render and save some code
-        num_done: Dict[str, int] = self.get_and_save_rendering_from_delimited_content(
-            delimited_content=delimited_content,
-            assets_path=work_dir,
-            dest_path=destination_path,
+        compilation_results, num_done = (
+            self.get_and_save_rendering_from_delimited_content(
+                delimited_content=delimited_content,
+                assets_path=work_dir,
+                dest_path=destination_path,
+            )
         )
 
         # 6. Save the information
         infos["num_done"] = num_done
 
-        return infos
+        return compilation_results, infos

@@ -1,10 +1,11 @@
 # This file defines unit tests for web page compiler.
 import os
 import pytest
+import shutil
 
 from PIL import Image
 
-from image2structure.compilation.compiler import CompilationError
+from image2structure.compilation.compiler import CompilationError, CompilationResult
 from image2structure.compilation.webpage_compiler import WebpageCompiler
 from image2structure.compilation.webpage.driver import ScreenshotOptions
 from image2structure.compilation.webpage.jekyll_server import JekyllServer
@@ -21,21 +22,30 @@ class TestWebpageCompiler:
         self.data_path: str = os.path.join(
             os.path.dirname(os.path.realpath(__file__)), "webpage/test_data"
         )
-        self.image_path: str = os.path.join(self.data_path, "output.png")
+        self.repo_path: str = os.path.join(self.data_path, "valid_repo")
+        self.image_path: str = os.path.join(self.repo_path, "rendering.png")
 
     def teardown_method(self, method):
         if os.path.exists(self.image_path):
             # Delete the output file
             os.remove(self.image_path)
+        _site_path = os.path.join(self.repo_path, "_site")
+        if os.path.exists(_site_path):
+            # Delete the _site directory
+            shutil.rmtree(_site_path)
 
     def test_compile_valid_repos(self):
-        repo_path: str = os.path.join(self.data_path, "valid_repo")
-        self.image_path = os.path.join(repo_path, "output.png")
-        ref_image_path: str = os.path.join(repo_path, "output_ref.png")
+        ref_image_path: str = os.path.join(self.repo_path, "output_ref.png")
 
         assert not os.path.exists(self.image_path)
-        self.compiler.compile(repo_path, self.image_path)
-        assert os.path.exists(self.image_path)
+        result: CompilationResult = self.compiler.compile(
+            self.repo_path, self.repo_path
+        )[0][0]
+        assert os.path.exists(result.rendering_path)
+        assert os.path.exists(result.data_path)
+        assert result.assets_path == []
+        assert result.data_path == self.repo_path
+        assert result.rendering_path == self.image_path
         assert os.path.exists(ref_image_path)
 
         # Check that the two images are the same
@@ -53,15 +63,12 @@ class TestWebpageCompiler:
         assert num_diff < 0.05 * image.size[0] * image.size[1]
 
     def test_fail_compile_invalid_repos(self):
-        repo_path: str = os.path.join(self.data_path, "invalid_repo")
-        image_path: str = os.path.join(repo_path, "output.png")
+        invalid_repo_path: str = os.path.join(self.data_path, "invalid_repo")
+        image_path: str = os.path.join(invalid_repo_path, "rendering.png")
         with pytest.raises(CompilationError):
-            self.compiler.compile(repo_path, image_path)
+            self.compiler.compile(invalid_repo_path, invalid_repo_path)
         assert not os.path.exists(image_path)
 
     def test_closes_port(self):
-        repo_path: str = os.path.join(self.data_path, "valid_repo")
-        self.image_path = os.path.join(repo_path, "output.png")
-
-        self.compiler.compile(repo_path, self.image_path)
+        self.compiler.compile(self.repo_path, self.repo_path)
         assert not JekyllServer.is_port_in_use(1234)

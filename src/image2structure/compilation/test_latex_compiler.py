@@ -23,4 +23,4 @@ class TestLatexCompiler:
 
     def test_compile_valid_repos(self):
         src_path: str = os.path.join(self.data_path, "cl_dice.tar.gz")
-        self.compiler.compile(src_path, self.dest_path)
+        compilation_result, infos = self.compiler.compile(src_path, self.dest_path)
