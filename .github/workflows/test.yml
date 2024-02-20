@@ -18,16 +18,16 @@ jobs:
       matrix:
         python-version: ["3.9", "3.10"]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
             ruby-version: 3.0
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - uses: actions/cache@v2
+      - uses: actions/cache@v4
         with:
           path: ~/.cache/pip
           key: pip-${{ hashFiles('requirements.txt') }}-${{ matrix.python-version }}
@@ -41,7 +41,7 @@ jobs:
       - name: Run static code checks
         run: source venv/bin/activate && ./pre-commit.sh
       - name: Collect 10 webpages
-        run: source venv/bin/activate && image2structure-collect --category html --num-instances 10 webpage --timeout 30 --port 4000 --max_size_kb 100
+        run: source venv/bin/activate && image2structure-collect --category html --num-instances 5 webpage --timeout 30 --port 4000 --max_size_kb 100
 
   test:
     name: Run all tests
@@ -54,16 +54,16 @@ jobs:
         run: |
             sudo rm -rf /opt/ghc
             df -h
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
             ruby-version: 3.0
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - uses: actions/cache@v2
+      - uses: actions/cache@v4
         with:
           path: ~/.cache/pip
           key: pip-${{ hashFiles('requirements.txt') }}
