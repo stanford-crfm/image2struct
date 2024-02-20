@@ -78,5 +78,6 @@ jobs:
         run: source venv/bin/activate && pytest --durations=20
         env:
           TOKEN_GITHUB: ${{ secrets.TOKEN_GITHUB }}
+          PERSPECTIVE_API_KEY: ${{ secrets.PERSPECTIVE_API_KEY }}
           TEST: ${{ matrix.test }}
           VERSION: ${{ github.head_ref || 'main' }}
