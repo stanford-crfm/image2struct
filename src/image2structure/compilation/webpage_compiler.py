@@ -2,9 +2,12 @@ from typing import Any, Dict
 
 import os
 
-from .compiler import Compiler, CompilationError
-from .webpage.jekyll_server import JekyllServer
-from .webpage.driver import save_random_screenshot, ScreenshotOptions
+from image2structure.compilation.compiler import Compiler, CompilationError
+from image2structure.compilation.webpage.jekyll_server import JekyllServer
+from image2structure.compilation.webpage.driver import (
+    save_random_screenshot,
+    ScreenshotOptions,
+)
 
 
 class WebpageCompiler(Compiler):
@@ -34,9 +37,6 @@ class WebpageCompiler(Compiler):
 
         # Check that the repo path exists
         if not os.path.exists(data_path):
-            import time
-
-            time.sleep(10)
             raise CompilationError(f"Path does not exist: {data_path}")
 
         # Start the Jekyll server

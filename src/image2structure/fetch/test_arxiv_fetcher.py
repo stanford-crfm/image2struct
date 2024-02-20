@@ -40,7 +40,9 @@ class TestArxivFetcher:
 
         # Download the first result
         self.fetcher.download(self.data_path, results[0])
-        file_path: str = os.path.join(self.data_path, results[0].instance_name)
+        file_path: str = os.path.join(
+            self.data_path, results[0].instance_name + ".tar.gz"
+        )
         assert os.path.exists(file_path)
 
     def test_download_invalid_path(self):
@@ -51,4 +53,4 @@ class TestArxivFetcher:
                 additional_info={},
             )
             self.fetcher.download("invalid_path", result)
-        assert not os.path.exists("invalid_path/fake_paper")
+        assert not os.path.exists("invalid_path/fake_paper.tar.gz")

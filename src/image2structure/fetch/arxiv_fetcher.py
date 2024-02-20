@@ -138,6 +138,8 @@ class ArxivFetcher(Fetcher):
         """
         download_file(
             download_url=scrape_result.download_url,
-            filename=os.path.join(destination_path, scrape_result.instance_name),
+            filename=os.path.join(
+                destination_path, scrape_result.instance_name + "tar.gz"
+            ),
             timeout_seconds=self._timeout,
         )
