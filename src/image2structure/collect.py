@@ -12,7 +12,7 @@ from .runner import Runner
 from .run_specs import _RUNNER_REGISTRY
 from image2structure.fetch.fetcher import ScrapeResult
 from image2structure.filter.utils import FilterError
-from image2structure.compilation.compiler import CompilationError
+from image2structure.compilation.compiler import CompilationError, CompilationResult
 from image2structure.fetch.fetcher import DownloadError
 
 
@@ -23,14 +23,6 @@ def get_args_parser() -> (
 
     # Common arguments
     parser.add_argument(
-        "--category",
-        type=str,
-        required=True,
-        help="The category of data to scrape, depending on the data type\n"
-        " - For 'latex', the category is the name of the arXiv category\n"
-        " - For 'webpage', the category is the main language defined by GitHub",
-    )
-    parser.add_argument(
         "--destination-path",
         type=str,
         default="./data",
@@ -39,8 +31,8 @@ def get_args_parser() -> (
     parser.add_argument(
         "--timeout",
         type=int,
-        default=10,
-        help="The maximum time in seconds to allow to download one file",
+        default=30,
+        help="The maximum time in seconds to allow to download one file or compile it",
     )
     parser.add_argument(
         "--num-instances",
@@ -81,44 +73,48 @@ def get_args_parser() -> (
     return parser, subparsers_dict
 
 
+def num_files_in_dir(dir: str) -> int:
+    return len(
+        [name for name in os.listdir(dir) if os.path.isfile(os.path.join(dir, name))]
+    )
+
+
 def run(runner: Runner, args: argparse.Namespace) -> None:
     # Create the output directories
-    output_path: str = os.path.join(
-        args.destination_path, args.runner_name, args.category
-    )
-    image_path: str = os.path.join(output_path, "images")
-    structure_path: str = os.path.join(output_path, "structure")
-    metadata_path: str = os.path.join(output_path, "metadata")
-    for path in [output_path, image_path, structure_path, metadata_path]:
-        os.makedirs(path, exist_ok=True)
+    output_path: str = os.path.join(args.destination_path, args.runner_name)
+    os.makedirs(output_path, exist_ok=True)
 
     # Variables to keep track of the progress
-    num_instances_collected: int = 0
-    num_instances_downloaded: int = 0
     num_instances_compiled: int = 0
+    num_instances_downloaded: int = 0
+    num_instances_collected: Dict[str, int] = {}
 
-    # Cleanup function
-    def cleanup(ided_instance_name: str) -> None:
-        path_structure: str = os.path.join(structure_path, ided_instance_name)
-        if os.path.exists(path_structure):
-            shutil.rmtree(path_structure)
-        path_image: str = os.path.join(image_path, f"{ided_instance_name}.png")
-        if os.path.exists(path_image):
-            os.remove(path_image)
-        path_metadata: str = os.path.join(metadata_path, f"{ided_instance_name}.json")
-        if os.path.exists(path_metadata):
-            os.remove(path_metadata)
+    # Working directories
+    tmp_dir = os.path.join(output_path, "tmp")
+    tmp_structure_path = os.path.join(tmp_dir, "structure")
+    tmp_image_path = os.path.join(tmp_dir, "images")
 
     # Scrape the data
-    while num_instances_collected < args.num_instances:
+    # Continue while num_instances_collected is empty or one of the category in num_instances_collected
+    # is lower than args.num_instances
+    while (
+        not num_instances_collected
+        or min(num_instances_collected.values()) < args.num_instances
+    ):
         scrape_results: List[ScrapeResult] = runner.fetcher.scrape(
             args.num_instances_at_once
         )
         for scrape_result in scrape_results:
+            # Create clean temporaty working directory
+            if os.path.exists(tmp_dir):
+                shutil.rmtree(tmp_dir)
+            for path in [tmp_dir, tmp_structure_path, tmp_image_path]:
+                os.makedirs(path, exist_ok=False)
+
             # Flag to continue to the next instance
             should_continue: bool = False
 
-            # Perform first filters: fetcher filtersf
+            # Perform first filters: fetcher filters
             for filter in runner.fetch_filters:
                 try:
                     accepted = filter.filter(scrape_result)
@@ -136,34 +132,29 @@ def run(runner: Runner, args: argparse.Namespace) -> None:
                 continue
 
             # Download the data
-            ided_instance_name: str = (
-                f"{num_instances_collected:04d}_{scrape_result.instance_name}"
-            )
-            instance_structure_path = os.path.join(structure_path, ided_instance_name)
             metadata = {
                 # Add all the ScrapeResult fields to the metadata
                 **{k: v for k, v in asdict(scrape_result).items()},
                 # Add additional metadata
-                "category": args.category,
                 "date": datetime.datetime.now().isoformat(),
-                "instance_structure_path": instance_structure_path,
             }
-            scrape_result.instance_name = ided_instance_name
+            # scrape_result.instance_name = ided_instance_name
             try:
-                runner.fetcher.download(structure_path, scrape_result)
+                runner.fetcher.download(tmp_structure_path, scrape_result)
                 num_instances_downloaded += 1
             except DownloadError as e:
                 print(f"Failed to download data: {e}")
-                cleanup(ided_instance_name)
                 continue
 
             # Run file filters
+            download_path: str = os.path.join(
+                tmp_structure_path, scrape_result.instance_name
+            )
             for filter in runner.file_filters:
                 try:
-                    accepted, infos = filter.filter(instance_structure_path)
+                    accepted, infos = filter.filter(download_path)
                     if not accepted:
                         print(f"Data did not pass file filter {filter}: {infos}")
-                        cleanup(ided_instance_name)
                         should_continue = True
                         break
                     elif infos:
@@ -175,62 +166,136 @@ def run(runner: Runner, args: argparse.Namespace) -> None:
                     should_continue = True
                     break
             if should_continue:
-                cleanup(ided_instance_name)
                 continue
 
             # Compile the data
-            compiled_image_path: str = os.path.join(
-                image_path, f"{ided_instance_name}.png"
-            )
             try:
-                compilation_info: Dict[str, Any] = runner.compiler.compile(
-                    instance_structure_path, compiled_image_path
+                compilation_results, compilation_info = runner.compiler.compile(
+                    download_path, tmp_image_path, scrape_result
                 )
                 num_instances_compiled += 1
                 if compilation_info:
                     metadata["compilation_info"] = compilation_info
             except CompilationError as e:
                 print(f"Failed to compile data: {e}")
-                cleanup(ided_instance_name)
                 continue
 
             # Last filters: render filters
-            for filter in runner.rendering_filters:
-                try:
-                    accepted, infos = filter.check_and_accept_image(compiled_image_path)
-                    if not accepted:
-                        print(f"Data did not pass post-filter {filter}: {infos}")
-                        should_continue = True
+            accepted_results: List[CompilationResult] = []
+            for compilation_result in compilation_results:
+                compiled_image_path: str = compilation_result.rendering_path
+                should_be_saved: bool = True
+                for filter in runner.rendering_filters:
+                    try:
+                        accepted, infos = filter.check_and_accept_image(
+                            compiled_image_path
+                        )
+                        if not accepted:
+                            print(f"Data did not pass post-filter {filter}: {infos}")
+                            should_be_saved = False
+                            break
+                        elif infos:
+                            if "rendering_filters" not in metadata:
+                                metadata["rendering_filters"] = {}
+                            metadata["rendering_filters"][filter.name] = infos
+                    except FilterError as e:
+                        print(f"Failed to run rendering filter {filter.name}: {e}")
+                        should_be_saved = True
                         break
-                    elif infos:
-                        if "rendering_filters" not in metadata:
-                            metadata["rendering_filters"] = {}
-                        metadata["rendering_filters"][filter.name] = infos
-                except FilterError as e:
-                    print(f"Failed to run rendering filter {filter.name}: {e}")
-                    should_continue = True
-                    break
+                if should_be_saved:
+                    accepted_results.append(compilation_result)
             if should_continue:
-                cleanup(ided_instance_name)
                 continue
 
-            # Save the metadata
-            instance_metadata_path: str = os.path.join(
-                metadata_path, f"{ided_instance_name}.json"
-            )
-            with open(instance_metadata_path, "w") as f:
-                json.dump(metadata, f, indent=4)
+            # Save the compiled data
+            done: bool = False
+            for compilation_result in accepted_results:
+                category: str = compilation_result.category
+                num_id: int = 0
+                if category not in num_instances_collected:
+                    # First time we collect this category
+                    # Create the directories
+                    for dir in ["metadata", "images", "structures", "assets"]:
+                        os.makedirs(
+                            os.path.join(output_path, category, dir), exist_ok=True
+                        )
+                    num_instances_collected[category] = 0
+                else:
+                    # Increment the number of instances collected
+                    num_id = num_files_in_dir(
+                        os.path.join(output_path, category, "metadata")
+                    )
 
-            # Increment the number of instances collected
-            num_instances_collected += 1
-            print(f"Instance {ided_instance_name} collected!")
-            if num_instances_collected >= args.num_instances:
+                # Copy shared metadata to compiled metadata
+                compiled_metadata: Dict[str, Any] = {
+                    **metadata,
+                    "category": category,
+                    "num_id": num_id,
+                }
+
+                # Save the metadata
+                instance_metadata_path: str = os.path.join(
+                    output_path, category, "metadata", f"{num_id}.json"
+                )
+                with open(instance_metadata_path, "w") as f:
+                    json.dump(compiled_metadata, f, indent=4)
+
+                # Save the image
+                instance_image_path: str = os.path.join(
+                    output_path, category, "images", f"{num_id}.png"
+                )
+                shutil.copy(compilation_result.rendering_path, instance_image_path)
+
+                # Save the assets
+                for asset_path in compilation_result.assets_path:
+                    # All asset names should be unique
+                    asset_name: str = os.path.basename(asset_path)
+                    instance_asset_path: str = os.path.join(
+                        output_path, category, "assets", asset_name
+                    )
+                    shutil.copy(asset_path, instance_asset_path)
+
+                # Save the structure
+                extension: str = (
+                    os.path.splitext(compilation_result.data_path)[-1]
+                    if "." in compilation_result.data_path
+                    else ""
+                )
+                instance_structure_path: str = os.path.join(
+                    output_path, category, "structures", f"{num_id}{extension}"
+                )
+                if os.path.isdir(compilation_result.data_path):
+                    # Compress the directory in .tar.gz to the instance_structure_path
+                    shutil.make_archive(
+                        instance_structure_path,
+                        "gztar",
+                        compilation_result.data_path,
+                    )
+                else:
+                    shutil.copy(compilation_result.data_path, instance_structure_path)
+
+                # Increment the number of instances collected
+                assert category in num_instances_collected
+                num_instances_collected[category] += 1
+                runner.compiler.acknowledge_compilation(category)
+                print(f"Instance number {num_id} of category {category} collected")
+
+                done = True
+                for category in num_instances_collected.keys():
+                    if num_instances_collected[category] < args.num_instances:
+                        done = False
+                        break
+                if done:
+                    break
+            if done:
                 break
 
     print("Scraping complete!")
     print(f" - {num_instances_downloaded} instances downloaded")
     print(f" - {num_instances_compiled} instances compiled")
-    print(f" - {num_instances_collected} instances collected")
+    print(" - For each category:")
+    for category, value in num_instances_collected.items():
+        print(f"\t - {category}: {value} instances collected")
 
 
 def get_runner_from_args(args: argparse.Namespace) -> Runner:
@@ -241,7 +306,8 @@ def get_runner_from_args(args: argparse.Namespace) -> Runner:
     runner_args["verbose"] = args.verbose
     runner_args["date_created_after"] = args.date_from
     runner_args["date_created_before"] = args.date_to
-    runner_args["subcategory"] = args.category
+    runner_args["num_instances"] = args.num_instances
+    runner_args["timeout"] = args.timeout
     runner = runner_func(**runner_args)
     return runner
 

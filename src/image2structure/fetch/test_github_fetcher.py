@@ -13,7 +13,7 @@ class TestGitHubFetcher:
             # Set fixed dates to avoid flakiness
             date_created_after=datetime.datetime(2021, 1, 1),
             date_created_before=datetime.datetime(2022, 1, 1),
-            subcategory="html",
+            language="html",
             timeout=30,
             max_size_kb=1,
             verbose=False,
@@ -21,12 +21,12 @@ class TestGitHubFetcher:
         results = fetcher.scrape(1)
         assert len(results) == 1
 
-    def test_scrape_invalid_subcategory(self):
+    def test_scrape_invalid_language(self):
         fetcher = GitHubFetcher(
             # Set fixed dates to avoid flakiness
             date_created_after=datetime.datetime(2021, 1, 1),
             date_created_before=datetime.datetime(2022, 1, 1),
-            subcategory="test",
+            language="test",
             timeout=30,
             max_size_kb=1,
             verbose=False,
@@ -39,20 +39,20 @@ class TestGitHubFetcher:
             # Set fixed dates to avoid flakiness
             date_created_after=datetime.datetime(2023, 1, 1),
             date_created_before=datetime.datetime(2023, 2, 1),
-            subcategory="python",
+            language="python",
             timeout=30,
             max_size_kb=1,
             verbose=False,
         )
         results = fetcher.scrape(100)
-        assert len(results) == 18
+        assert len(results) == 19
 
     def test_download_runs(self):
         fetcher = GitHubFetcher(
             # Set fixed dates to avoid flakiness
             date_created_after=datetime.datetime(2021, 1, 1),
             date_created_before=datetime.datetime(2022, 1, 1),
-            subcategory="html",
+            language="html",
             timeout=30,
             max_size_kb=1,
             verbose=False,
@@ -71,7 +71,7 @@ class TestGitHubFetcher:
             # All parameters are irrelevant except for the timeout
             date_created_after=datetime.datetime(2021, 1, 1),
             date_created_before=datetime.datetime(2022, 1, 1),
-            subcategory="html",
+            language="html",
             timeout=30,
             max_size_kb=1,
             verbose=False,

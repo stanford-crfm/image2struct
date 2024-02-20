@@ -1,6 +1,7 @@
-from typing import TypeVar, Dict, Callable, Union
+from typing import TypeVar, Dict, Callable, Union, List
 
 import datetime
+import imagehash
 
 from image2structure.runner import Runner
 
@@ -25,12 +26,16 @@ def register_runner(name: str, args_info=None) -> Callable[[F], F]:
     return wrapper
 
 
-@register_runner("webpage", args_info={"timeout": int, "port": int, "max_size_kb": int})
+@register_runner(
+    "webpage",
+    args_info={"language": str, "port": int, "max_size_kb": int},
+)
 def get_webpage_runner(
     date_created_after: datetime.datetime,
     date_created_before: datetime.datetime,
-    subcategory: str,
     timeout: int,
+    num_instances: int,
+    language: str,
     port: int,
     max_size_kb: int,
     verbose: bool,
@@ -48,12 +53,11 @@ def get_webpage_runner(
         GitHubFetchFilter,
     )
     from image2structure.compilation.webpage.driver import ScreenshotOptions
-    import imagehash
 
     fetcher = GitHubFetcher(
         date_created_after=date_created_after,
         date_created_before=date_created_before,
-        subcategory=subcategory,
+        language=language,
         timeout=timeout,
         max_size_kb=max_size_kb,
         verbose=verbose,
@@ -85,6 +89,66 @@ def get_webpage_runner(
             hash_size_white_imgs=8,
             hash_size_other_imgs=5,
             max_background_percentage=95.0,
+            threshold_white_percentage=50.0,
+            verbose=False,
+        )
+    ]
+
+    return Runner(
+        fetcher=fetcher,
+        fetch_filters=fetch_filters,
+        file_filters=file_filters,
+        compiler=compiler,
+        rendering_filters=rendering_filters,
+    )
+
+
+@register_runner(
+    "latex",
+    args_info={"subcategory": str},
+)
+def get_latex_runner(
+    date_created_after: datetime.datetime,
+    date_created_before: datetime.datetime,
+    timeout: int,
+    num_instances: int,
+    subcategory: str,
+    verbose: bool,
+) -> Runner:
+    """Get a runner for webpage data."""
+    from image2structure.compilation.latex_compiler import LatexCompiler
+    from image2structure.fetch.arxiv_fetcher import ArxivFetcher
+    from image2structure.filter.rendering_filters.non_trivial_rendering_filter import (
+        NonTrivialRenderingFilter,
+    )
+    from image2structure.filter.fetch_filters.fetch_filter import FetchFilter
+    from image2structure.filter.file_filters.file_filter import FileFilter
+
+    fetcher = ArxivFetcher(
+        date_created_after=date_created_after,
+        date_created_before=date_created_before,
+        subcategory=subcategory,
+        timeout=timeout,
+        verbose=verbose,
+    )
+
+    fetch_filters: List[FetchFilter] = []
+    file_filters: List[FileFilter] = []
+
+    compiler = LatexCompiler(
+        crop=True,
+        timeout=timeout,
+        max_elt_per_category=3,
+        num_instances=num_instances,
+        verbose=verbose,
+    )
+
+    rendering_filters = [
+        NonTrivialRenderingFilter(
+            hashfunc=imagehash.average_hash,
+            hash_size_white_imgs=8,
+            hash_size_other_imgs=5,
+            max_background_percentage=99.0,
             threshold_white_percentage=50.0,
             verbose=False,
         )

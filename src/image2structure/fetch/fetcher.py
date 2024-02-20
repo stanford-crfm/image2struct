@@ -31,11 +31,9 @@ class Fetcher(ABC):
         self,
         date_created_after: datetime.datetime,
         date_created_before: datetime.datetime,
-        subcategory: str,
         timeout: int,
         verbose: bool,
     ):
-        self._subcategory = subcategory
         self._date_created_after = date_created_after
         self._date_created_before = date_created_before
         self._timeout = timeout
