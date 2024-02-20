@@ -149,7 +149,7 @@ def run(runner: Runner, args: argparse.Namespace) -> None:
                 # Add all the ScrapeResult fields to the metadata
                 **{k: v for k, v in asdict(scrape_result).items()},
                 # Add additional metadata
-                "date": datetime.datetime.now().isoformat(),
+                "date_scrapped": datetime.datetime.now().isoformat(),
             }
             # scrape_result.instance_name = ided_instance_name
             try:
