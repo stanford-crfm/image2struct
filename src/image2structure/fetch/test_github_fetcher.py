@@ -45,7 +45,7 @@ class TestGitHubFetcher:
             verbose=False,
         )
         results = fetcher.scrape(100)
-        assert len(results) == 18
+        assert len(results) == 19
 
     def test_download_runs(self):
         fetcher = GitHubFetcher(
