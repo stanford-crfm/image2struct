@@ -1,0 +1,109 @@
+% This version of CVPR template is provided by Ming-Ming Cheng.
+% Please leave an issue if you found a bug:
+% https://github.com/MCG-NKU/CVPR_Template.
+
+%\documentclass[review]{cvpr}
+\documentclass[final]{cvpr}
+
+\usepackage{times}
+\usepackage{epsfig}
+\usepackage{graphicx}
+\usepackage[section]{placeins}
+\usepackage{amsthm}
+\usepackage{amsmath}
+\usepackage{thmtools}
+\usepackage{amssymb}
+\usepackage{comment}
+\usepackage{color}
+\usepackage{multirow}
+\usepackage[linesnumbered,ruled]{algorithm2e}
+\usepackage{algorithmicx}
+\usepackage[table]{xcolor}
+\usepackage{arydshln}
+\usepackage{thm-restate}
+%\usepackage{hyperref}
+%\usepackage{cleveref}
+\usepackage{enumitem}
+\usepackage{listings}
+\usepackage[misc]{ifsym}
+\usepackage{bbding}
+% \usepackage{float}
+\makeatletter
+\newcommand{\removelatexerror}{\let\@latex@error\@gobble}
+\makeatother
+
+% \makeatletter
+% \setlength{\@fptop}{0pt}
+% \makeatother
+
+
+% \usepackage[utf8]{inputenc}
+% \usepackage{amsthm}
+% \theoremstyle{definition}
+\newtheorem{theorem}{Theorem}
+\newtheorem{corollary}{Corollary}[theorem]\makeatletter
+\setlength{\@fptop}{0pt}
+\makeatother
+
+
+\newtheorem{observation}[theorem]{Observation}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{lemma}{Lemma}[proposition]
+
+
+% Include other packages here, before hyperref.
+
+% If you comment hyperref and then uncomment it, you should delete
+% egpaper.aux before re-running latex.  (Or just hit 'q' on the first latex
+% run, let it finish, and you should be clear).
+\usepackage[pagebackref=true,breaklinks=true,colorlinks,bookmarks=false]{hyperref}
+\usepackage{nopageno}
+
+\def\cvprPaperID{2257} % *** Enter the CVPR Paper ID here
+\def\confYear{CVPR 2021}
+%\setcounter{page}{4321} % For final version only
+
+\begin{document}
+
+%%%%%%%%% TITLE
+
+\title{clDice - a Novel Topology-Preserving Loss Function for Tubular Structure Segmentation}
+
+\author{Suprosanna Shit \thanks{The authors contributed equally to the work} ~$^{1}$ ~~~~
+Johannes C. Paetzold $^\ast$~$^{1}$~~~~
+Anjany Sekuboyina$^{1}$~~~~
+Ivan Ezhov$^{1}$~~~~\\
+Alexander Unger$^{1}$~~~~
+Andrey Zhylka$^{2}$~~~~
+Josien P. W. Pluim$^{2}$~~~~
+Ulrich Bauer$^{1}$~~~~
+Bjoern H. Menze$^{1}$~~~~\\
+\hfil$^{1}$Technical University of Munich~~~~~$^{2}$ Eindhoven University of Technology\vspace{0.1cm}
+}
+
+\maketitle
+%%%%%%%% ABSTRACT
+\begin{abstract} Accurate segmentation of tubular, network-like structures, such as vessels, neurons, or roads, is relevant to many fields of research. For such structures, the topology is their most important characteristic; particularly preserving connectedness: in the case of vascular networks, missing a connected vessel entirely alters the blood-flow dynamics. We introduce a novel similarity measure termed centerlineDice (short \textit{clDice}), which is calculated on the intersection of the segmentation masks and their (morphological) skeleta. We theoretically prove that \textit{clDice} guarantees topology preservation up to homotopy equivalence for binary 2D and 3D segmentation. Extending this, we propose a computationally efficient, differentiable loss function (\textit{soft-clDice}) for training arbitrary neural segmentation networks. We benchmark the \textit{soft-clDice} loss on five public datasets, including vessels, roads and neurons (2D and 3D). Training on \textit{soft-clDice} leads to segmentation with more accurate connectivity information, higher graph similarity, and better volumetric scores.
+\end{abstract}
+%%%%%%%% BODY TEXT
+
+\input{01_intro.tex}
+
+
+\input{02_methods.tex}
+\input{03_proof.tex}
+\input{04_experiments.tex}
+
+
+\clearpage
+{\small
+\bibliographystyle{ieee_fullname}
+\bibliography{main}
+}
+
+\clearpage
+\appendix
+\input{06_appendix.tex}
+
+
+\end{document}

@@ -11,7 +11,7 @@ from image2structure.fetch.utils import download_file
 
 class ArxivFetcher(Fetcher):
 
-    DOWNLOAD_URL_BASE: str = "https://arxiv.org/e-print/"
+    DOWNLOAD_URL_BASE: str = "https://arxiv.org/src/"
 
     def __init__(
         self,

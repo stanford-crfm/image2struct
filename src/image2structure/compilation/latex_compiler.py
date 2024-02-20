@@ -4,7 +4,6 @@ from PIL import Image
 
 import os
 import io
-import tarfile
 import shutil
 import re
 import numpy as np
@@ -411,21 +410,15 @@ class LatexCompiler(Compiler):
         infos: Dict[str, Any] = {}
 
         # 0. Create the directories
-        src_dir: str = os.path.join(destination_path, "tmp/src")
         work_dir: str = os.path.join(destination_path, "tmp/work")
-        os.makedirs(src_dir, exist_ok=True)
         os.makedirs(work_dir, exist_ok=True)
 
-        # 1. Unzip the file
-        try:
-            with tarfile.open(data_path, "r:gz") as tar:
-                # Extract all the contents into the current directory
-                tar.extractall(path=src_dir)
-        except tarfile.ReadError:
-            raise CompilationError(f"Failed to extract the tar file: {data_path}")
+        # 1. Check that the data path is a directory
+        if not os.path.isdir(data_path):
+            raise CompilationError(f"The data path {data_path} is not a directory.")
 
         # 2. Search for the LaTeX files
-        list_tex_code: List[str] = self.search_for_latex_files(src_dir, work_dir)
+        list_tex_code: List[str] = self.search_for_latex_files(data_path, work_dir)
 
         # 3. Delimit the content
         categories: List[str] = self._categories

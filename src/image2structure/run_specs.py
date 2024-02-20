@@ -1,9 +1,12 @@
 from typing import TypeVar, Dict, Callable, Union, List
+from dotenv import load_dotenv
 
 import datetime
 import imagehash
+import os
 
 from image2structure.runner import Runner
+from image2structure.filter.file_filters.toxicity_filter import ToxicityFilter
 from image2structure.filter.fetch_filters.date_fetch_filter import DateFetchFilter
 
 
@@ -25,6 +28,16 @@ def register_runner(name: str, args_info=None) -> Callable[[F], F]:
         return func
 
     return wrapper
+
+
+def get_toxicity_filter() -> ToxicityFilter:
+    """Get a toxicity filter."""
+    load_dotenv()
+    return ToxicityFilter(
+        api_key=os.getenv("PERSPECTIVE_API_KEY"),
+        toxicity_threshold=0.5,
+        sexually_explicit_threshold=0.3,
+    )
 
 
 @register_runner(
@@ -78,7 +91,8 @@ def get_webpage_runner(
             max_num_assets=5,
             max_num_lines_code=1000,
             max_num_lines_style=2000,
-        )
+        ),
+        get_toxicity_filter(),
     ]
 
     compiler = WebpageCompiler(
@@ -141,7 +155,7 @@ def get_latex_runner(
     fetch_filters: List[FetchFilter] = [
         DateFetchFilter(max_instances_per_date=max_instances_per_date)
     ]
-    file_filters: List[FileFilter] = []
+    file_filters: List[FileFilter] = [get_toxicity_filter()]
 
     compiler = LatexCompiler(
         crop=True,

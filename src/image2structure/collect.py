@@ -7,6 +7,7 @@ import datetime
 import json
 import os
 import shutil
+import tarfile
 
 from .runner import Runner
 from .run_specs import _RUNNER_REGISTRY
@@ -151,6 +152,23 @@ def run(runner: Runner, args: argparse.Namespace) -> None:
             except DownloadError as e:
                 print(f"Failed to download data: {e}")
                 continue
+
+            # If extension is .tar.gz, extract the directory
+            if scrape_result.instance_name.endswith(".tar.gz"):
+                try:
+                    with tarfile.open(
+                        os.path.join(tmp_structure_path, scrape_result.instance_name),
+                        "r:gz",
+                    ) as tar:
+                        scrape_result.instance_name = scrape_result.instance_name[:-7]
+                        tar.extractall(
+                            os.path.join(
+                                tmp_structure_path, scrape_result.instance_name
+                            )
+                        )
+                except tarfile.ReadError as e:
+                    print(f"Failed to extract data: {e}")
+                    continue
 
             # Run file filters
             download_path: str = os.path.join(
