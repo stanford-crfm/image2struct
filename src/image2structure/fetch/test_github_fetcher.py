@@ -80,6 +80,7 @@ class TestGitHubFetcher:
             result = ScrapeResult(
                 download_url="https://github.com/fakeuser/fakerepo",
                 instance_name="fakerepo",
+                date=datetime.datetime.now(),
                 additional_info={},
             )
             self.fetcher.download("invalid_path", result)

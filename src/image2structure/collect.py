@@ -48,6 +48,12 @@ def get_args_parser() -> (
         help="The number of instances to scrape at once",
     )
     parser.add_argument(
+        "--max-instances-per-date",
+        type=int,
+        default=40,
+        help="The maximum number of instances to scrape per date",
+    )
+    parser.add_argument(
         "--date-from",
         type=lambda s: datetime.datetime.strptime(s, "%Y-%m-%d"),
         default=datetime.datetime.now() - datetime.timedelta(days=365),
@@ -325,6 +331,7 @@ def get_runner_from_args(args: argparse.Namespace) -> Runner:
     runner_args["date_created_after"] = args.date_from
     runner_args["date_created_before"] = args.date_to
     runner_args["num_instances"] = args.num_instances
+    runner_args["max_instances_per_date"] = args.max_instances_per_date
     runner_args["timeout"] = args.timeout
     runner = runner_func(**runner_args)
     return runner

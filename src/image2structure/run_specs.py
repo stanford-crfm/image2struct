@@ -7,6 +7,7 @@ import os
 
 from image2structure.runner import Runner
 from image2structure.filter.file_filters.toxicity_filter import ToxicityFilter
+from image2structure.filter.fetch_filters.date_fetch_filter import DateFetchFilter
 
 
 F = TypeVar("F", bound=Callable[..., Runner])
@@ -51,6 +52,7 @@ def get_webpage_runner(
     language: str,
     port: int,
     max_size_kb: int,
+    max_instances_per_date: int,
     verbose: bool,
 ) -> Runner:
     """Get a runner for webpage data."""
@@ -76,7 +78,10 @@ def get_webpage_runner(
         verbose=verbose,
     )
 
-    fetch_filters = [GitHubFetchFilter()]
+    fetch_filters = [
+        GitHubFetchFilter(),
+        DateFetchFilter(max_instances_per_date=max_instances_per_date),
+    ]
 
     file_filters = [
         RepoFilter(
@@ -127,6 +132,7 @@ def get_latex_runner(
     timeout: int,
     num_instances: int,
     subcategory: str,
+    max_instances_per_date: int,
     verbose: bool,
 ) -> Runner:
     """Get a runner for webpage data."""
@@ -146,7 +152,9 @@ def get_latex_runner(
         verbose=verbose,
     )
 
-    fetch_filters: List[FetchFilter] = []
+    fetch_filters: List[FetchFilter] = [
+        DateFetchFilter(max_instances_per_date=max_instances_per_date)
+    ]
     file_filters: List[FileFilter] = [get_toxicity_filter()]
 
     compiler = LatexCompiler(
