@@ -1,0 +1,355 @@
+\begin{thebibliography}{10}\itemsep=-1pt
+
+\bibitem{aleksandrov1998combinatorial}
+Pavel~S Aleksandrov.
+\newblock {\em Combinatorial topology}, volume~1.
+\newblock Courier Corporation, 1998.
+
+\bibitem{andres2011probabilistic}
+Bjoern Andres et~al.
+\newblock Probabilistic image segmentation with closedness constraints.
+\newblock In {\em ICCV}, pages 2611--2618. IEEE, 2011.
+
+\bibitem{araujo2019deep}
+Ricardo~J Ara{\'u}jo, Jaime~S Cardoso, and H{\'e}lder~P Oliveira.
+\newblock A deep learning design for improving topology coherence in blood
+  vessel segmentation.
+\newblock In {\em International Conference on Medical Image Computing and
+  Computer-Assisted Intervention}, pages 93--101. Springer, 2019.
+
+\bibitem{belli2019image}
+Davide Belli and Thomas Kipf.
+\newblock Image-conditioned graph generation for road network extraction.
+\newblock {\em arXiv preprint arXiv:1910.14388}, 2019.
+
+\bibitem{bentaieb2016topology}
+A{\"\i}cha BenTaieb and Ghassan Hamarneh.
+\newblock Topology aware fully convolutional networks for histology gland
+  segmentation.
+\newblock In {\em MICCAI}, pages 460--468. Springer, 2016.
+
+\bibitem{cciccek20163d}
+{\"O}zg{\"u}n {\c{C}}i{\c{c}}ek and Aothers.
+\newblock {3D U-Net}: learning dense volumetric segmentation from sparse
+  annotation.
+\newblock In {\em MICCAI}, pages 424--432. Springer, 2016.
+
+\bibitem{citrarotowards}
+Leonardo Citraro, Mateusz Kozi{\'n}ski, and Pascal Fua.
+\newblock Towards reliable evaluation of algorithms for road network
+  reconstruction from aerial images.
+\newblock In {\em European Conference on Computer Vision}, pages 703--719.
+  Springer, 2020.
+
+\bibitem{clough2020topological}
+James Clough, Nicholas Byrne, Ilkay Oksuz, Veronika~A Zimmer, Julia~A Schnabel,
+  and Andrew King.
+\newblock A topological loss function for deep-learning based image
+  segmentation using persistent homology.
+\newblock {\em IEEE Transactions on Pattern Analysis and Machine Intelligence},
+  2020.
+
+\bibitem{di2018whole}
+Antonino~Paolo Di~Giovanna et~al.
+\newblock Whole-brain vasculature reconstruction at the single capillary level.
+\newblock {\em Scientific reports}, 8(1):12573, 2018.
+
+\bibitem{edelsbrunner2000topological}
+Herbert Edelsbrunner et~al.
+\newblock Topological persistence and simplification.
+\newblock In {\em FOCS}, pages 454--463. IEEE, 2000.
+
+\bibitem{edelsbrunner2010computational}
+Herbert Edelsbrunner and John Harer.
+\newblock {\em Computational topology: an introduction}.
+\newblock American Mathematical Soc., 2010.
+
+\bibitem{Funke_2019}
+Jan Funke, Fabian Tschopp, William Grisaitis, Arlo Sheridan, Chandan Singh,
+  Stephan Saalfeld, and Srinivas~C. Turaga.
+\newblock Large scale image segmentation with structured loss based deep
+  learning for connectome reconstruction.
+\newblock {\em IEEE Transactions on Pattern Analysis and Machine Intelligence},
+  41(7):1669–1680, Jul 2019.
+
+\bibitem{gerlRSOM}
+Stefan Gerl et~al.
+\newblock A distance-based loss for smooth and continuous skin layer
+  segmentation in optoacoustic images.
+\newblock In {\em International Conference on Medical Image Computing and
+  Computer-Assisted Intervention}, pages 309--319. Springer, 2020.
+
+\bibitem{gur2019unsupervised}
+Shir Gur, Lior Wolf, Lior Golgher, and Pablo Blinder.
+\newblock Unsupervised microvascular image segmentation using an active
+  contours mimicking neural network.
+\newblock In {\em Proceedings of the IEEE/CVF International Conference on
+  Computer Vision}, pages 10722--10731, 2019.
+
+\bibitem{han2003topology}
+Xiao Han et~al.
+\newblock A topology preserving level set method for geometric deformable
+  models.
+\newblock {\em IEEE TPAMI}, 25(6):755--768, 2003.
+
+\bibitem{hu2018retinal}
+Kai Hu et~al.
+\newblock Retinal vessel segmentation of color fundus images using multiscale
+  convolutional neural network with an improved cross-entropy loss function.
+\newblock {\em Neurocomputing}, 309:179--191, 2018.
+
+\bibitem{hu2019topology}
+Xiaoling Hu et~al.
+\newblock Topology-preserving deep image segmentation.
+\newblock In {\em NeurIPS}, pages 5658--5669, 2019.
+
+\bibitem{hunter2012morphological}
+Jesse~M Hunter et~al.
+\newblock Morphological and pathological evolution of the brain
+  microcirculation in aging and {A}lzheimer’s disease.
+\newblock {\em PloS one}, 7(5):e36893, 2012.
+
+\bibitem{jin20173d}
+Dakai Jin, Ziyue Xu, Adam~P Harrison, Kevin George, and Daniel~J Mollura.
+\newblock 3d convolutional neural networks with graph refinement for airway
+  segmentation using incomplete data labels.
+\newblock In {\em International Workshop on Machine Learning in Medical
+  Imaging}, pages 141--149. Springer, 2017.
+
+\bibitem{joutel2010cerebrovascular}
+Anne Joutel et~al.
+\newblock Cerebrovascular dysfunction and microcirculation rarefaction precede
+  white matter lesions in a mouse genetic model of cerebral ischemic small
+  vessel disease.
+\newblock {\em JCI}, 120(2):433--445, 2010.
+
+\bibitem{kirbas2004review}
+Cemil Kirbas and Francis Quek.
+\newblock A review of vessel extraction techniques and algorithms.
+\newblock {\em CSUR}, 36(2):81--121, 2004.
+
+\bibitem{kong2020learning}
+Bin Kong, Xin Wang, Junjie Bai, Yi Lu, Feng Gao, Kunlin Cao, Jun Xia, Qi Song,
+  and Youbing Yin.
+\newblock Learning tree-structured representation for 3d coronary artery
+  segmentation.
+\newblock {\em Computerized Medical Imaging and Graphics}, 80:101688, 2020.
+
+\bibitem{kong1995topology}
+T.~Yung Kong.
+\newblock On topology preservation in {2-D} and {3-D} thinning.
+\newblock {\em International journal of pattern recognition and artificial
+  intelligence}, 9(05):813--844, 1995.
+
+\bibitem{kong1989digital}
+T~Yung Kong and Azriel Rosenfeld.
+\newblock Digital topology: Introduction and survey.
+\newblock {\em Computer Vision, Graphics, and Image Processing},
+  48(3):357--393, 1989.
+
+\bibitem{lee1994building}
+Ta-Chih Lee et~al.
+\newblock Building skeleton models via {3-D} medial surface axis thinning
+  algorithms.
+\newblock {\em CVGIP: Graphical Models and Image Processing}, 56(6):462--478,
+  1994.
+
+\bibitem{ma1994topology}
+Cherng~Min Ma.
+\newblock On topology preservation in {3D} thinning.
+\newblock {\em CVGIP: Image understanding}, 59(3):328--339, 1994.
+
+\bibitem{milletari2016v}
+Fausto Milletari et~al.
+\newblock V-net: Fully convolutional neural networks for volumetric medical
+  image segmentation.
+\newblock In {\em 3DV}, pages 565--571. IEEE, 2016.
+
+\bibitem{MnihThesis}
+Volodymyr Mnih.
+\newblock {\em Machine Learning for Aerial Image Labeling}.
+\newblock PhD thesis, University of Toronto, 2013.
+
+\bibitem{mosinska2018beyond}
+Agata Mosinska et~al.
+\newblock Beyond the pixel-wise loss for topology-aware delineation.
+\newblock In {\em CVPR}, pages 3136--3145, 2018.
+
+\bibitem{mosinska2019joint}
+Agata Mosinska, Mateusz Kozi{\'n}ski, and Pascal Fua.
+\newblock Joint segmentation and path classification of curvilinear structures.
+\newblock {\em IEEE Transactions on Pattern Analysis and Machine Intelligence},
+  42(6):1515--1521, 2019.
+
+\bibitem{navarro2019shape}
+Fernando Navarro, Suprosanna Shit, et~al.
+\newblock Shape-aware complementary-task learning for multi-organ segmentation.
+\newblock In {\em International Workshop on MLMI}, pages 620--627. Springer,
+  2019.
+
+\bibitem{nowozin2009global}
+Sebastian Nowozin and Christoph~H Lampert.
+\newblock Global connectivity potentials for random field models.
+\newblock In {\em CVPR}, pages 818--825. IEEE, 2009.
+
+\bibitem{oner2020promoting}
+Doruk Oner, Mateusz Kozi{\'n}ski, Leonardo Citraro, Nathan~C Dadap, Alexandra~G
+  Konings, and Pascal Fua.
+\newblock Promoting connectivity of network-like structures by enforcing region
+  separation.
+\newblock {\em arXiv preprint arXiv:2009.07011}, 2020.
+
+\bibitem{oswald2014generalized}
+Martin~Ralf Oswald et~al.
+\newblock Generalized connectivity constraints for spatio-temporal {3D}
+  reconstruction.
+\newblock In {\em ECCV}, pages 32--46. Springer, 2014.
+
+\bibitem{paetzold2019transfer}
+Johannes~C Paetzold, Oliver Schoppe, et~al.
+\newblock Transfer learning from synthetic data reduces need for labels to
+  segment brain vasculature and neural pathways in 3d.
+\newblock In {\em International Conference on Medical Imaging with Deep
+  Learning--Extended Abstract Track}, 2019.
+
+\bibitem{palagyi20023}
+K{\'a}lm{\'a}n Pal{\'a}gyi.
+\newblock A 3-subiteration {3D} thinning algorithm for extracting medial
+  surfaces.
+\newblock {\em Pattern Recognition Letters}, 23(6):663--675, 2002.
+
+\bibitem{phellan2017vascular}
+Renzo Phellan et~al.
+\newblock Vascular segmentation in {TOF MRA} images of the brain using a deep
+  convolutional neural network.
+\newblock In {\em MICCAI Workshop}, pages 39--46. Springer, 2017.
+
+\bibitem{rempfler2017efficient}
+Markus Rempfler et~al.
+\newblock Efficient algorithms for moral lineage tracing.
+\newblock In {\em ICCV}, pages 4695--4704, 2017.
+
+\bibitem{ronneberger2015u}
+Olaf Ronneberger et~al.
+\newblock U-net: Convolutional networks for biomedical image segmentation.
+\newblock In {\em MICCAI}, pages 234--241. Springer, 2015.
+
+\bibitem{rosenfeld1979digital}
+Azriel Rosenfeld.
+\newblock Digital topology.
+\newblock {\em The American Mathematical Monthly}, 86(8):621--630, 1979.
+
+\bibitem{schneider2012tissue}
+Matthias Schneider et~al.
+\newblock Tissue metabolism driven arterial tree generation.
+\newblock {\em Med Image Anal.}, 16(7):1397--1414, 2012.
+
+\bibitem{schneider2015joint}
+Matthias Schneider et~al.
+\newblock Joint {3-D} vessel segmentation and centerline extraction using
+  oblique {H}ough forests with steerable filters.
+\newblock {\em Med Image Anal.}, 19(1):220--249, 2015.
+
+\bibitem{segonne2008active}
+Florent S{\'e}gonne.
+\newblock Active contours under topology control—genus preserving level sets.
+\newblock {\em International Journal of Computer Vision}, 79(2):107--117, 2008.
+
+\bibitem{shih1995skeletonization}
+Frank~Y Shih and Christopher~C Pu.
+\newblock A skeletonization algorithm by maxima tracking on euclidean distance
+  transform.
+\newblock {\em Pattern Recognition}, 28(3):331--341, 1995.
+
+\bibitem{staal2004ridge}
+Joes Staal, Michael~D Abr{\`a}moff, Meindert Niemeijer, Max~A Viergever, and
+  Bram Van~Ginneken.
+\newblock Ridge-based vessel segmentation in color images of the retina.
+\newblock {\em IEEE transactions on medical imaging}, 23(4):501--509, 2004.
+
+\bibitem{stuhmer2013tree}
+Jan Stuhmer et~al.
+\newblock Tree shape priors with connectivity constraints using convex
+  relaxation on general graphs.
+\newblock In {\em ICCV}, pages 2336--2343, 2013.
+
+\bibitem{sudre2017generalised}
+Carole~H Sudre et~al.
+\newblock Generalised dice overlap as a deep learning loss function for highly
+  unbalanced segmentations.
+\newblock In {\em MICCAI Workshop}, pages 240--248. Springer, 2017.
+
+\bibitem{taha2015metrics}
+Abdel~Aziz Taha and Allan Hanbury.
+\newblock Metrics for evaluating {3D} medical image segmentation: analysis,
+  selection, and tool.
+\newblock {\em BMC Medical Imaging}, 15(1):29, 2015.
+
+\bibitem{tetteh2018deepvesselnet}
+Giles Tetteh et~al.
+\newblock Deepvesselnet: Vessel segmentation, centerline prediction, and
+  bifurcation detection in 3-d angiographic volumes.
+\newblock {\em arXiv preprint arXiv:1803.09340}, 2018.
+
+\bibitem{todorov2019automated}
+Mihail~Ivilinov Todorov, Johannes~C. Paetzold, et~al.
+\newblock Automated analysis of whole brain vasculature using machine learning.
+\newblock {\em bioRxiv}, page 613257, 2019.
+
+\bibitem{turetken2016reconstructing}
+Engin T{\"u}retken et~al.
+\newblock Reconstructing curvilinear networks using path classifiers and
+  integer programming.
+\newblock {\em IEEE TPAMI}, 38(12):2515--2530, 2016.
+
+\bibitem{uslu2018multi}
+Fatmat{\"u}lzehra Uslu and Anil~Anthony Bharath.
+\newblock A multi-task network to detect junctions in retinal vasculature.
+\newblock In {\em MICCAI}, pages 92--100. Springer, 2018.
+
+\bibitem{vasu2020topoal}
+Subeesh Vasu, Mateusz Kozinski, Leonardo Citraro, and Pascal Fua.
+\newblock Topoal: An adversarial learning approach for topology-aware road
+  segmentation.
+\newblock {\em arXiv preprint arXiv:2007.09084}, 2020.
+
+\bibitem{vicente2008graph}
+Sara Vicente et~al.
+\newblock Graph cut based image segmentation with connectivity priors.
+\newblock In {\em CVPR}, pages 1--8. IEEE, 2008.
+
+\bibitem{wegner2013higher}
+Jan~D Wegner et~al.
+\newblock A higher-order {CRF} model for road network extraction.
+\newblock In {\em CVPR}, pages 1698--1705. IEEE, 2013.
+
+\bibitem{whitehead1949combinatorial}
+John~HC Whitehead.
+\newblock Combinatorial homotopy. i.
+\newblock {\em Bulletin of the American Mathematical Society}, 55(3):213--245,
+  1949.
+
+\bibitem{wright1995skeletonization}
+Mark~W Wright et~al.
+\newblock Skeletonization using an extended euclidean distance transform.
+\newblock {\em Image and Vision Computing}, 13(5):367--375, 1995.
+
+\bibitem{wu2016deep}
+Aaron Wu, Ziyue Xu, Mingchen Gao, Mario Buty, and Daniel~J Mollura.
+\newblock Deep vessel tracking: A generalized probabilistic approach via deep
+  learning.
+\newblock In {\em 2016 IEEE 13th International Symposium on Biomedical Imaging
+  (ISBI)}, pages 1363--1367. IEEE, 2016.
+
+\bibitem{zeng2008topology}
+Yun Zeng et~al.
+\newblock Topology cuts: A novel min-cut/max-flow algorithm for topology
+  preserving segmentation in n--d images.
+\newblock {\em CVIU}, 112(1):81--90, 2008.
+
+\bibitem{zhao2020cellular}
+Shan Zhao et~al.
+\newblock Cellular and molecular probing of intact human organs.
+\newblock {\em Cell}, 2020.
+
+\end{thebibliography}

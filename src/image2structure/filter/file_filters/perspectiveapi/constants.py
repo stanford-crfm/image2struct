@@ -66,6 +66,19 @@ class ToxicityAttributes:
     # Attribute: FLIRTATION
     flirtation_score: Optional[float] = None
 
+    # Make JSON serializable
+    def to_dict(self) -> Dict[str, Optional[float]]:
+        return {
+            "toxicity_score": self.toxicity_score,
+            "severe_toxicity_score": self.severe_toxicity_score,
+            "identity_attack_score": self.identity_attack_score,
+            "insult_score": self.insult_score,
+            "profanity_score": self.profanity_score,
+            "threat_score": self.threat_score,
+            "sexually_explicit_score": self.sexually_explicit_score,
+            "flirtation_score": self.flirtation_score,
+        }
+
 
 @dataclass(frozen=True)
 class PerspectiveAPIRequestResult:

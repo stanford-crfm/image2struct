@@ -31,7 +31,7 @@ class ToxicityFilter(FileFilter):
     """
 
     # Maximum allowed text length by Perspective API
-    MAX_TEXT_LENGTH: int = 20_480
+    MAX_TEXT_LENGTH: int = 20_400
 
     @staticmethod
     def create_request_body(
@@ -161,7 +161,6 @@ class ToxicityFilter(FileFilter):
             list_files = list_files_in_dir(file_path)
         else:
             list_files = [file_path]
-        print(f"List of files: {list_files}")
 
         # Read the content of the files
         texts: List[str] = []
@@ -171,7 +170,6 @@ class ToxicityFilter(FileFilter):
                     texts.append(f.read())
             except UnicodeDecodeError:
                 pass
-        print(f"Texts: {texts}")
 
         # Create a request to the Perspective API
         request = PerspectiveAPIRequest(text_batch=texts)
@@ -181,7 +179,10 @@ class ToxicityFilter(FileFilter):
         if not result.success:
             return False, {
                 "error": result.error,
-                "text_to_toxicity_attributes": result.text_to_toxicity_attributes,
+                "text_to_toxicity_attributes": {
+                    text: attributes.to_dict()
+                    for text, attributes in result.text_to_toxicity_attributes.items()
+                },
             }
 
         # If the request was successful, check the thresholds
@@ -197,6 +198,9 @@ class ToxicityFilter(FileFilter):
                 is_toxic = True
                 break
         return not is_toxic, {
-            "text_to_toxicity_attributes": result.text_to_toxicity_attributes,
+            "text_to_toxicity_attributes": {
+                text: attributes.to_dict()
+                for text, attributes in result.text_to_toxicity_attributes.items()
+            },
             "reason": reason,
         }

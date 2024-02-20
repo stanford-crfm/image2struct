@@ -1,0 +1,70 @@
+\section{Topological Guarantees for clDice}
+\label{sec:proof}
+
+The following section provides general theoretical guarantees for the preservation of topological properties achieved by optimizing \textit{clDice} under mild conditions on the input.
+Roughly, these conditions state that the object of interest is embedded in $S^3$ in a non-knotted way, as is typically the case for blood vessel and road structures.
+
+
+Specifically, we assume that both ground truth and prediction \emph{admit foreground and background skeleta}, which means that both foreground and background are homotopy-equivalent to topological graphs, which we assume to be embedded as \emph{skeleta}.
+Here, the voxel grid is considered as a cubical complex, consisting of elementary cubes of dimensions 0, 1, 2, and 3.
+This is a special case of a \emph{cell complex} (specifically, a \emph{CW complex}), which is a space constructed inductively, starting with isolated points ($0$-cells), and gluing a collection of topological balls of dimension $k$ (called \emph{$k$-cells}) along their boundary spheres to a $k-1$-dimensional complex.
+The voxel grid, seen as a cell complex in this sense,
+can be completed to an ambient complex that is homeomorphic to the 3-sphere $S^3$ by attaching a single exterior cell to the boundary.
+In order to consider foreground and background of a binary image as complementary subspaces,
+the foreground is now assumed to be the union of closed unit cubes in the voxel grid, corresponding to voxels with value $1$; and the background is the complement in the ambient complex.
+This convention is commonly used in digital topology \cite{kong1989digital,kong1995topology}.
+The assumption on the background can then be replaced by a convenient equivalent condition, stating that the foreground is also homotopy equivalent to a subcomplex obtained from the ambient complex by only removing 3-cells and 2-cells.
+Such a subcomplex is then clearly homotopy-equivalent to the complement of a 1-complex.\\
+
+
+%The skeleton of the foreground can be assumed to be a 1-dimensional subcomplex, while the background skeleton can be assumed to be a 1-dimensional subcomplex of the dual cell structure. Note that both skeleta are then subcomplexes of the canonical subdivision of the grid complex that subdivides each voxel into 8 smaller ones.
+
+%The assumption on the background being homotopy-equivalent to a
+
+
+We will now observe that the above assumptions imply that the foreground and the background are connected and have a free fundamental group and vanishing higher fundamental groups.
+In particular, the homotopy type is already determined by the first Betti number \footnote{Betti numbers:
+	$\beta_0$ represents the number of distinct \textit{connected-components},
+	$\beta_1$ represents the number of \textit{circular holes}%[c.f. Fig. A. \ref{fig_top_ex}]
+	, and
+	$\beta_2$ represents the number of \textit{cavities}, for depictions see Supplementary material }; moreover, a map inducing an isomorphism in homology is already a homotopy equivalence.
+To see this, first note that both foreground and background are assumed to have the homology of a graph, in particular, homology is trivial in degree 2.
+By Alexander duality \cite{aleksandrov1998combinatorial}, then, both foreground and background have trivial reduced cohomology in degree 0, meaning that they are connected.
+This implies that both have a free fundamental group (as any connected graph) and vanishing higher homotopy groups.
+In particular, since homology in degree 1 is the Abelianization of the fundamental group, these two groups are isomorphic.
+This in turn implies that in our setting a map that induces isomorphisms in homology already induces isomorphisms between all homotopy groups.
+By Whitehead's theorem \cite{whitehead1949combinatorial}, such a map is then a homotopy equivalence.\\
+
+The following theorem shows that under our assumptions on the images admitting foreground and background skeleta, the existence of certain nested inclusions already implies the homotopy-equivalence of foreground and background, which we refer to as \emph{topology preservation}.
+
+\begin{theorem}
+	\label{thm2}
+	Let $L_A \subseteq A \subseteq K_A$ 
+	and $L_B \subseteq B \subseteq K_B$
+	be connected subcomplexes of some cell complex.
+	Assume that the above inclusions
+	are homotopy equivalences.
+	If the subcomplexes also are related by inclusions
+	$L_A \subseteq B \subseteq K_A$ 
+	and $L_B \subseteq A \subseteq K_B$, then these inclusions must be homotopy equivalences as well.
+	In particular, $A$ and $B$ are homotopy-equivalent.
+\end{theorem}
+
+\begin{proof}
+	An inclusion of connected cell complexes is a homotopy equivalence if and only if it induces isomorphisms on all homotopy groups.
+	Since the inclusion $L_A \subseteq B \subseteq K_A$ induces an isomorphism, the inclusion $L_A \subseteq B$ induces a monomorphism, and since $B \subseteq K_B$ induces an isomorphism, the inclusion $L_A \subseteq K_B$ also induces a monomorphism.
+	At the same time, since the inclusion $L_B \subseteq A \subseteq K_B$ induces an isomorphism, the inclusion $A \subseteq K_B$ induces an epiorphism, and since $L_A \subseteq A$ induces an isomorphism, the inclusion $L_A \subseteq K_B$ also induces an epiorphism.
+	Together, this implies that the inclusion $L_A \subseteq K_B$ induces an isomorphism.
+	
+	Together with the isomorphisms induced by $L_A \subseteq A$ and $B \subseteq K_B$, we obtain isomorphisms induced by $L_A \subseteq B$ and by $A \subseteq K_B$, which compose to an isomorphism
+	between the homotopy groups of $A$ and $B$.
+\end{proof}
+
+\begin{corollary}
+	Let $V_L$ and $V_P$ be two binary masks admitting foreground and background skeleta, such that the foreground skeleton of $V_L$ is included in the foreground of $V_P$ and vice versa, and similarly for the background.
+	Then the foregrounds of $V_L$ and $V_P$ are homotopy equivalent, and the same is true for their backgrounds.
+\end{corollary}
+
+Note that the inclusion condition in this corollary is satisfied if and only if \textit{clDice} evaluates to $1$ on both foreground and background of $(V_L,V_P)$.
+
+This proof lays the ground for a general interpretation of \textit{clDice} as a topology preserving metric. Additionally, we provide an elaborate explanation of \textit{clDice} topological properties, using concepts of applied digital topology in the theory section of the Supplementary material \cite{kong1989digital,kong1995topology}.

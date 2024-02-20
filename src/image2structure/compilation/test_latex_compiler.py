@@ -25,7 +25,7 @@ class TestLatexCompiler:
         shutil.rmtree(self.dest_path)
 
     def test_compile_valid_repos(self):
-        src_path: str = os.path.join(self.data_path, "cl_dice.tar.gz")
+        src_path: str = os.path.join(self.data_path, "cl_dice")
         compilation_result, _ = self.compiler.compile(src_path, self.dest_path)
         assert len(compilation_result) > 0
 
