@@ -30,6 +30,12 @@ def get_args_parser() -> (
         help="The path to save the scraped data to",
     )
     parser.add_argument(
+        "--tmp-path",
+        type=str,
+        default="./data/tmp",
+        help="The path to save the temporary files to",
+    )
+    parser.add_argument(
         "--timeout",
         type=int,
         default=30,
@@ -97,7 +103,7 @@ def run(runner: Runner, args: argparse.Namespace) -> None:
     num_instances_collected: Dict[str, int] = {}
 
     # Working directories
-    tmp_dir = os.path.join(output_path, "tmp")
+    tmp_dir: str = args.tmp_path
     tmp_structure_path = os.path.join(tmp_dir, "structure")
     tmp_image_path = os.path.join(tmp_dir, "images")
 
