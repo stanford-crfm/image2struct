@@ -33,22 +33,21 @@ class LatexCompiler(Compiler):
         crop: bool,
         num_instances: int,
         max_elt_per_category: int,
+        timeout: int,
         verbose: bool = False,
         categories: List[str] = CATEGORIES,
     ):
+        super().__init__(timeout=timeout, verbose=verbose)
         self._crop = crop
-        self._verbose = verbose
         self._categories = categories
 
         # Counter to save the assets
         self._asset_number = 0
 
-        # Internal counter fo all categories (equations, tables, figures, ...)
+        # Maximum number of category that we want to extract for one compilation
+        # i.e. we should not take 100 equations from the same paper
         self._max_elt_per_category = max_elt_per_category
         self._num_instances = num_instances
-        self._num_to_do: Dict[str, int] = {
-            category: num_instances for category in categories
-        }
 
     @staticmethod
     def latex_to_pdf(latex_code: str, assets_path: str) -> io.BytesIO:
@@ -228,7 +227,11 @@ class LatexCompiler(Compiler):
 
         for category, (must_contain, delimiters) in TEX_DELIMITERS.items():
             # Skip the category if it is not in the list of categories
-            if category not in self._categories:
+            # Or if we have already extracted enough instances
+            if (
+                category not in self._categories
+                or self._num_compiled_instances.get(category, 0) >= self._num_instances
+            ):
                 continue
 
             delimited_content[category] = []
@@ -294,13 +297,18 @@ class LatexCompiler(Compiler):
         num_done: Dict[str, int] = {}
 
         for category, list_of_content in delimited_content.items():
-            os.makedirs(f"{dest_path}/images/{category}s", exist_ok=True)
-            os.makedirs(f"{dest_path}/contents/{category}s", exist_ok=True)
-            os.makedirs(f"{dest_path}/assets", exist_ok=True)
+            num_images: int = 0
+            num_max_image = self._num_instances - self._num_compiled_instances.get(
+                category, 0
+            )
+            num_max_image = min(num_max_image, self._max_elt_per_category)
 
-            num_images = 0
-            offset = self._num_instances - self._num_to_do[category]
-            num_max_image = self._num_to_do[category]
+            if num_max_image <= 0:
+                continue
+
+            os.makedirs(f"{dest_path}/images/{category}", exist_ok=True)
+            os.makedirs(f"{dest_path}/structures/{category}", exist_ok=True)
+            os.makedirs(f"{dest_path}/assets", exist_ok=True)
 
             for tex_code in list_of_content:
                 try:
@@ -313,6 +321,8 @@ class LatexCompiler(Compiler):
 
                     # Check if the image is not fully white
                     if image is None or np.allclose(image, 255):
+                        if self._verbose:
+                            print("Image is fully white, skipping...")
                         continue
 
                     # Save the associated assets
@@ -331,28 +341,23 @@ class LatexCompiler(Compiler):
                             # Could not copy one of the assets so ignore this tex_code
                             all_assets_saved = False
                     if not all_assets_saved:
+                        if self._verbose:
+                            print("Could not save all assets, skipping...")
                         continue
 
                     # Save the image
-                    image_path: str = (
-                        f"{dest_path}/images/{category}s/{category}_{num_images + offset}.png"
-                    )
+                    image_path: str = f"{dest_path}/images/{category}/{num_images}.png"
                     image.save(image_path)
 
                     # Save the associated code
                     code_path: str = (
-                        f"{dest_path}/contents/{category}s/{category}_{num_images + offset}.tex"
+                        f"{dest_path}/structures/{category}/{num_images}.tex"
                     )
                     with open(
                         code_path,
                         "w",
                     ) as f:
                         f.write(tex_code)
-
-                    # Once we have enough images, stop rendering
-                    num_images += 1
-                    if num_images >= num_max_image:
-                        break
 
                     # Save the compilation
                     compilations.append(
@@ -364,8 +369,17 @@ class LatexCompiler(Compiler):
                         )
                     )
 
+                    # Once we have enough images, stop rendering
+                    if self._verbose:
+                        print(f"Compiled {num_images} instances for {category}.")
+                    num_images += 1
+                    if num_images >= num_max_image:
+                        break
+
                 # There was an error rendering or saving the code, go to the next code
-                except Exception:
+                except Exception as e:
+                    if self._verbose:
+                        print(f"Failed to render the code: {e}")
                     continue
 
             num_done[category] = num_images
@@ -414,9 +428,7 @@ class LatexCompiler(Compiler):
         list_tex_code: List[str] = self.search_for_latex_files(src_dir, work_dir)
 
         # 3. Delimit the content
-        categories = [
-            category for category, value in self._num_to_do.items() if value > 0
-        ]
+        categories: List[str] = self._categories
         delimited_content: Dict[str, List[str]] = {
             category: [] for category in categories
         }
@@ -430,12 +442,13 @@ class LatexCompiler(Compiler):
             random.shuffle(delimited_content[category])
 
         # 5. Render and save some code
-        compilation_results, num_done = (
-            self.get_and_save_rendering_from_delimited_content(
-                delimited_content=delimited_content,
-                assets_path=work_dir,
-                dest_path=destination_path,
-            )
+        (
+            compilation_results,
+            num_done,
+        ) = self.get_and_save_rendering_from_delimited_content(
+            delimited_content=delimited_content,
+            assets_path=work_dir,
+            dest_path=destination_path,
         )
 
         # 6. Save the information

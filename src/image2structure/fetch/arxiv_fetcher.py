@@ -25,11 +25,8 @@ class ArxivFetcher(Fetcher):
         timeout: int,
         verbose: bool,
     ):
+        super().__init__(date_created_after, date_created_before, timeout, verbose)
         self._subcategory = subcategory
-        self._date_created_after = date_created_after
-        self._date_created_before = date_created_before
-        self._timeout = timeout
-        self._verbose = verbose
 
         # Store the remaining results as we cannot fetch X results but only
         # results from a given date range
@@ -111,7 +108,7 @@ class ArxivFetcher(Fetcher):
             results.append(
                 ScrapeResult(
                     download_url=download_url,
-                    instance_name=doi,
+                    instance_name=doi + ".tar.gz",
                     additional_info=output,
                 )
             )
@@ -138,8 +135,6 @@ class ArxivFetcher(Fetcher):
         """
         download_file(
             download_url=scrape_result.download_url,
-            filename=os.path.join(
-                destination_path, scrape_result.instance_name + "tar.gz"
-            ),
+            filename=os.path.join(destination_path, scrape_result.instance_name),
             timeout_seconds=self._timeout,
         )

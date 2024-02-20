@@ -37,14 +37,13 @@ class GitHubFetcher(Fetcher):
         self,
         date_created_after: datetime.datetime,
         date_created_before: datetime.datetime,
-        subcategory: str,
+        language: str,
         timeout: int,
         max_size_kb: int,
         verbose: bool,
     ):
-        super().__init__(
-            date_created_after, date_created_before, subcategory, timeout, verbose
-        )
+        super().__init__(date_created_after, date_created_before, timeout, verbose)
+        self._language: str = language
         self._page: int = 1
         self._max_size_kb: int = max_size_kb
 
@@ -87,14 +86,14 @@ class GitHubFetcher(Fetcher):
                 else f"{self._date_created_after.strftime('%Y-%m-%d')}..{self._date_created_before.strftime('%Y-%m-%d')}"  # noqa: E501
             ),
         }
-        if self._subcategory.lower() not in [
+        if self._language.lower() not in [
             "html",
             "css",
             "javascript",
             "python",
         ]:
-            raise ScrapeError(f"Invalid subcategory: {self._subcategory}")
-        query_parameters["language"] = self._subcategory
+            raise ScrapeError(f"Invalid language: {self._language}")
+        query_parameters["language"] = self._language
         search_query = "github.io in:name "
         search_query += " ".join(
             [f"{key}:{value}" for key, value in query_parameters.items()]

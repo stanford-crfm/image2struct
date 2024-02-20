@@ -23,9 +23,8 @@ class WebpageCompiler(Compiler):
         verbose: bool,
         screenshot_options: ScreenshotOptions,
     ):
+        super().__init__(timeout, verbose)
         self._port = port
-        self._timeout = timeout
-        self._verbose = verbose
         self._screenshot_options = screenshot_options
 
     def compile(
@@ -79,11 +78,9 @@ class WebpageCompiler(Compiler):
         # Stop the server
         server.stop()
 
-        category: str = (
-            scrape_result.additional_info.get("language", "unknown").lower()
-            if scrape_result
-            else "unknown"
-        )
+        category: str = "unknown"
+        if scrape_result is not None and "language" in scrape_result.additional_info:
+            category = scrape_result.additional_info["language"].lower()
         compilation_result = CompilationResult(
             data_path=data_path, rendering_path=rendering_path, category=category
         )

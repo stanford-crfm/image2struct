@@ -28,6 +28,14 @@ class CompilationError(Exception):
 class Compiler(ABC):
     """Compiles data into a structure."""
 
+    def __init__(self, timeout: int, verbose: bool):
+        self._timeout = timeout
+        self._verbose = verbose
+
+        # Keeps tracks of how many instances have been compiled
+        # for each category
+        self._num_compiled_instances: Dict[str, int] = {}
+
     @abstractmethod
     def compile(
         self,
@@ -52,3 +60,13 @@ class Compiler(ABC):
             CompilationError: If the compilation fails.
         """
         pass
+
+    def acknowledge_compilation(self, category: str):
+        """Acknowledge that an instance has been compiled."""
+        if category not in self._num_compiled_instances:
+            self._num_compiled_instances[category] = 0
+        self._num_compiled_instances[category] += 1
+        if self._verbose:
+            print(
+                f"Compiled {self._num_compiled_instances[category]} instances for {category}."
+            )

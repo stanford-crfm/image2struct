@@ -1,4 +1,5 @@
-# This file defines unit tests for web page compiler.
+from typing import Dict
+
 import os
 import shutil
 
@@ -9,8 +10,10 @@ class TestLatexCompiler:
     def setup_method(self, method):
         self.compiler = LatexCompiler(
             crop=True,
+            timeout=30,
             num_instances=5,
             max_elt_per_category=3,
+            verbose=True,
         )
         self.data_path: str = os.path.join(
             os.path.dirname(os.path.realpath(__file__)), "tex/test_data"
@@ -23,4 +26,21 @@ class TestLatexCompiler:
 
     def test_compile_valid_repos(self):
         src_path: str = os.path.join(self.data_path, "cl_dice.tar.gz")
-        compilation_result, infos = self.compiler.compile(src_path, self.dest_path)
+        compilation_result, _ = self.compiler.compile(src_path, self.dest_path)
+        assert len(compilation_result) > 0
+
+        # Count number of rendered images per category
+        num_images: Dict[str, int] = {}
+        for result in compilation_result:
+            if result.category not in num_images:
+                num_images[result.category] = 0
+            num_images[result.category] += 1
+        expected_num_images = {
+            "equation": 3,
+            "figure": 3,
+            "algorithm": 2,
+            "table": 1,
+        }
+        for category, count in expected_num_images.items():
+            assert category in num_images
+            assert num_images[category] == count
