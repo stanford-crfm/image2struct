@@ -47,24 +47,6 @@ class GitHubFetcher(Fetcher):
         self._page: int = 1
         self._max_size_kb: int = max_size_kb
 
-        # Set internal dates to separate the search into multiple queries
-        self._delay_days: int = 1
-        self._date_created_before_internal = date_created_before
-        self._date_created_after_internal = date_created_before - datetime.timedelta(
-            days=self._delay_days
-        )
-
-    def change_internal_dates(self):
-        """Change the internal dates for the next query"""
-        self._page = 1
-        self._date_created_before_internal = self._date_created_after_internal
-        self._date_created_after_internal = (
-            self._date_created_after_internal
-            - datetime.timedelta(days=self._delay_days)
-        )
-        if self._date_created_after_internal < self._date_created_after:
-            raise ScrapeError("No more results available for the given date range.")
-
     def scrape(self, num_instances: int) -> List[ScrapeResult]:
         """
         Scrape num_instances data points.
@@ -104,14 +86,14 @@ class GitHubFetcher(Fetcher):
         # Check that we won't exceed the maximum number of results
         self._page += 1
         if self._page * num_instances >= self.GITHUB_MAX_RESULTS:
-            self.change_internal_dates()
+            self.change_internal_dates(days=1)
 
         if self._verbose:
             print("Searching for repositories with the following query:", url)
         try:
             response = requests.get(url, headers=get_headers(), timeout=30)
         except requests.exceptions.RequestException as e:
-            self.change_internal_dates()
+            self.change_internal_dates(days=1)
             time.sleep(10)
             raise ScrapeError(f"Failed to retrieve data: {e}")
 
@@ -119,7 +101,7 @@ class GitHubFetcher(Fetcher):
             # Check if we got num_instances results.
             # If we got less, it means, we have to change the dates for the next query
             if len(response.json()["items"]) < num_instances:
-                self.change_internal_dates()
+                self.change_internal_dates(days=1)
 
             return [
                 ScrapeResult(
@@ -128,6 +110,9 @@ class GitHubFetcher(Fetcher):
                     .replace("/", "_")
                     .replace(".github.io", "")
                     .replace(".", "_"),
+                    date=datetime.datetime.strptime(
+                        item["created_at"], "%Y-%m-%dT%H:%M:%SZ"
+                    ),
                     additional_info={**item, "user": item["owner"]["id"]},
                 )
                 for item in response.json()["items"]

@@ -14,6 +14,9 @@ class ScrapeResult:
     # Name of the instance
     instance_name: str
 
+    # Data date
+    date: datetime.datetime
+
     # Additional information about the result
     additional_info: Dict[str, Any]
 
@@ -38,6 +41,22 @@ class Fetcher(ABC):
         self._date_created_before = date_created_before
         self._timeout = timeout
         self._verbose = verbose
+
+        # Internal dates
+        self._date_created_before_internal = date_created_before
+        self._date_created_after_internal = date_created_before - datetime.timedelta(
+            days=1
+        )
+
+    def change_internal_dates(self, days: int):
+        """Change the internal dates for the next query"""
+        self._page = 1
+        self._date_created_before_internal = self._date_created_after_internal
+        self._date_created_after_internal = (
+            self._date_created_after_internal - datetime.timedelta(days=days)
+        )
+        if self._date_created_after_internal < self._date_created_after:
+            raise ScrapeError("No more results available for the given date range.")
 
     @abstractmethod
     def scrape(self, num_instances: int) -> List[ScrapeResult]:
