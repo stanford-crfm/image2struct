@@ -48,6 +48,7 @@ class TestArxivFetcher:
             result = ScrapeResult(
                 download_url="https://arxiv.org/src/fake",
                 instance_name="fake_paper",
+                date=datetime.datetime.now(),
                 additional_info={},
             )
             self.fetcher.download("invalid_path", result)
