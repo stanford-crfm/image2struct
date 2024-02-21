@@ -8,10 +8,11 @@ import json
 import os
 import shutil
 import tarfile
+import time
 
 from .runner import Runner
 from .run_specs import _RUNNER_REGISTRY
-from image2structure.fetch.fetcher import ScrapeResult
+from image2structure.fetch.fetcher import ScrapeResult, ScrapeError
 from image2structure.filter.utils import FilterError
 from image2structure.compilation.compiler import CompilationError, CompilationResult
 from image2structure.fetch.fetcher import DownloadError
@@ -114,9 +115,14 @@ def run(runner: Runner, args: argparse.Namespace) -> None:
         not num_instances_collected
         or min(num_instances_collected.values()) < args.num_instances
     ):
-        scrape_results: List[ScrapeResult] = runner.fetcher.scrape(
-            args.num_instances_at_once
-        )
+        try:
+            scrape_results: List[ScrapeResult] = runner.fetcher.scrape(
+                args.num_instances_at_once
+            )
+        except ScrapeError as e:
+            print(f"Failed to scrape data: {e}")
+            time.sleep(60)
+            continue
         for scrape_result in scrape_results:
             # Create clean temporaty working directory
             if os.path.exists(tmp_dir):
