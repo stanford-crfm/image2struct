@@ -23,7 +23,7 @@ Usage:
 python experimental/pull_music_sheets.py <start_year> <end_year> -n <num_examples> -o <output_dir> -c <credentials_path>
 
 Example usage: 
-python experimental/pull_music_sheets.py 2000 2010 -n 10 -o output/sheetmusic2lilypond -c credentials/imslp.conf
+python experimental/pull_music_sheets.py 2000 2010 -n 10 -o data/sheetmusic2lilypond -c credentials/imslp.conf
 """
 
 
