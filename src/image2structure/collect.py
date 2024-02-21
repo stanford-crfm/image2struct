@@ -147,7 +147,11 @@ def run(runner: Runner, args: argparse.Namespace) -> None:
             # Download the data
             metadata = {
                 # Add all the ScrapeResult fields to the metadata
-                **{k: v for k, v in asdict(scrape_result).items()},
+                **{
+                    k: v.strftime("%Y-%m-%d") if isinstance(v, datetime.datetime) else v
+                    for k, v in asdict(scrape_result).items()
+                    if v
+                },
                 # Add additional metadata
                 "date_scrapped": datetime.datetime.now().isoformat(),
             }
