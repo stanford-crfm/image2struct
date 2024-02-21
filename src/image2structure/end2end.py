@@ -64,7 +64,6 @@ def get_args_parser() -> argparse.Namespace:
         required=True,
         help="The latest date to scrape data from",
     )
-    parser.add_argument("--verbose", action="store_true", help="Print verbose output")
     return parser.parse_args()
 
 
@@ -78,9 +77,8 @@ def main():
         f" --max-instances-per-date {args.max_instances_per_date}"
         f" --date-from {args.date_from} --date-to {args.date_to}"
         f" --timeout {args.timeout} --destination-path {args.destination_path}"
+        " --verbose"
     )
-    if args.verbose:
-        command_base += " --verbose"
     collect_commands: List[str] = []
     if args.type == "webpage":
         for i, category in enumerate(["css", "html", "javascript"]):
