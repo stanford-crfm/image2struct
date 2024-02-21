@@ -263,6 +263,7 @@ def run(runner: Runner, args: argparse.Namespace) -> None:
                 # Copy shared metadata to compiled metadata
                 compiled_metadata: Dict[str, Any] = {
                     **metadata,
+                    "assets": compilation_result.assets,
                     "category": category,
                     "num_id": num_id,
                 }
