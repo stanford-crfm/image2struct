@@ -8,6 +8,7 @@ from imslp import client
 from imslp.interfaces.scraping import fetch_images_metadata
 from mwclient.page import Page
 from mwclient.image import Image
+from pdf2image.exceptions import PDFPageCountError
 from PIL import Image
 from tqdm import tqdm
 
@@ -139,6 +140,7 @@ def fetch_music_sheets(
                     os.remove(file_path)
                     if generated:
                         generated_count += 1
+                        hlog(f"Generated {generated_count} of {num_examples} examples.")
                         break
 
                     # Add a delay to avoid subscription prompt
@@ -161,7 +163,6 @@ def generate_sheet_image(pdf_path: str, output_path: str, page_number: int) -> b
     """
     # Read PDF file in binary mode
     try:
-        # sample from page 3+ because page 1-2 could be a title
         image: Optional[Image] = pdf_to_image(pdf_path, page_number=page_number)
 
         if image is None:
@@ -175,7 +176,7 @@ def generate_sheet_image(pdf_path: str, output_path: str, page_number: int) -> b
 
         image.save(output_path, "PNG")
         hlog(f"Success: Extracted page {page_number} from {pdf_path} as an image.")
-    except RuntimeError as e:
+    except (RuntimeError, PDFPageCountError) as e:
         hlog(f"Skipping: Error generating image from {pdf_path}: {e}")
         return False
 
