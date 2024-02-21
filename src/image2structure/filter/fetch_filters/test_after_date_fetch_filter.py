@@ -1,6 +1,6 @@
 import datetime
 
-from image2structure.filter.fetch_filters.before_date_fetch_filter import (
+from image2structure.filter.fetch_filters.after_date_fetch_filter import (
     AfterDateFetchFilter,
 )
 from image2structure.fetch.fetcher import ScrapeResult
