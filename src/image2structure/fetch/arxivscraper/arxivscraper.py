@@ -15,6 +15,7 @@ from urllib.request import urlopen
 from urllib.error import HTTPError, URLError
 
 from image2structure.fetch.arxivscraper.constants import OAI, ARXIV, BASE
+from image2structure.fetch.fetcher import ScrapeError
 
 
 class Record(object):
@@ -224,7 +225,7 @@ class Scraper(object):
                     time.sleep(to)
                     continue
                 else:
-                    raise e
+                    raise ScrapeError({f"Error when scraping: {e}"}) from e
 
             k += 1
             xml = response.read()
