@@ -130,8 +130,7 @@ class ToxicityFilter(FileFilter):
             with self._client_lock:
                 try:
                     batch_request.execute()
-                # Handle socket.timeout, httplib2.HttpLib2Error, and googleapiclient.errors.HttpError
-                except (HttpLib2Error, HttpError) as e:
+                except Exception as e:
                     raise FileFilterError(
                         f"Error was thrown when making a request to Perspective API: {e}"
                     ) from e
