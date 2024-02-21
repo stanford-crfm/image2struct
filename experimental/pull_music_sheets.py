@@ -17,7 +17,7 @@ from image2structure.util.image_utils import pdf_to_image, is_mostly_white
 
 
 """
-Pull music sheets from IMSLP to generate the MusicSheets2LilyPond dataset.
+Pull music sheets from IMSL (International Music Score Library Project) to generate the MusicSheets2LilyPond dataset.
 
 Usage: 
 python experimental/pull_music_sheets.py <start_year> <end_year> -n <num_examples> -o <output_dir> -c <credentials_path>
@@ -34,7 +34,12 @@ def fetch_music_sheets(
     credentials_path: str,
 ) -> None:
     """
-    Pulls music sheets from IMSLP and outputs them to `output_dir`
+    Pulls music sheets from IMSLP (International Music Score Library Project) and outputs them to `output_dir`.
+    Launched in 2006, IMSLP is a project aimed at creating a virtual library containing all public domain music
+    scores, as well as scores from composers who are willing to share their music with the world free of charge.
+    The IMSLP also includes recordings and educational materials related to music.
+
+    In order to reduce duplicate sheets, we sample one sheet per work.
 
     :param num_examples: Number of examples to pull
     :param year_range: Tuple[int, int] representing the range of years to pull music sheets from (inclusive)
@@ -67,7 +72,7 @@ def fetch_music_sheets(
             f"Attempting to generate {num_examples} examples from IMSLP between {year_range[0]} and {year_range[1]}..."
     ):
         # `search_works` without any arguments returns all works
-        with htrack_block("Searching for all works. Please be patient as this may take few minutes."):
+        with htrack_block("Searching for all works. Please be patient as this may take a few minutes."):
             results = c.search_works()
             hlog(f"Found {len(results)} works.")
 
@@ -164,13 +169,13 @@ def generate_sheet_image(pdf_path: str, output_path: str, page_number: int) -> b
 
         # Check that the image is mostly white
         if not is_mostly_white(image):
-            hlog(f"Skipping {pdf_path} because it is not mostly white")
+            hlog(f"Skipping: {pdf_path} is not mostly white")
             return False
 
         image.save(output_path, "PNG")
-        hlog(f"Extracted page {page_number} from {pdf_path} as an image.")
-    except IOError as e:
-        hlog(f"Error generating image from {pdf_path}: {e}")
+        hlog(f"Success: Extracted page {page_number} from {pdf_path} as an image.")
+    except RuntimeError as e:
+        hlog(f"Skipping: Error generating image from {pdf_path}: {e}")
         return False
 
     return True
