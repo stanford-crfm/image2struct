@@ -151,7 +151,7 @@ def main():
 
         # Push the dataset to the hub
         dataset_dict = DatasetDict({"validation": valid_dataset, "test": test_dataset})
-        dataset_dict.push_to_hub("stanford-crfm/i2s-webpage", config_name=category)
+        dataset_dict.push_to_hub(args.dataset_name, config_name=category)
 
 
 if __name__ == "__main__":

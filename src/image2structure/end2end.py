@@ -121,8 +121,8 @@ def main():
     print(f"Uploading data to {args.huggingface_base}/{args.type}")
     upload_command: str = (
         f"image2structure-upload --data-path {args.destination_path}/{args.type}"
-        f" --dataset-name {args.huggingface_base}/{args.type}"
+        f" --dataset-name {args.huggingface_base}/i2s-{args.type}"
     )
     print(f"Running the following command:\n\t- {upload_command}")
     os.system(upload_command)
-    print(f"Data uploaded to {args.huggingface_base}/{args.type}")
+    print(f"Data uploaded to {args.huggingface_base}/i2s-{args.type}")
