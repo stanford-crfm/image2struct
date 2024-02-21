@@ -118,22 +118,26 @@ def main():
         # Load the structure
         df: pd.DataFrame = pd.DataFrame()
         for i in tqdm(range(num_data_points), desc="Loading data"):
-            structure = os.path.join(structure_path, f"{i}{extension}")
-            image = os.path.join(image_path, f"{i}.png")
-            metadata = os.path.join(metadata_path, f"{i}.json")
-            # ignore assets for now
-            df = pd.concat(
-                [
-                    df,
-                    pd.DataFrame(
-                        {
-                            "structure": [structure],
-                            "image": [image],
-                            "metadata": [metadata],
-                        }
-                    ),
-                ]
-            )
+            try:
+                structure = os.path.join(structure_path, f"{i}{extension}")
+                image = os.path.join(image_path, f"{i}.png")
+                metadata = os.path.join(metadata_path, f"{i}.json")
+                # ignore assets for now
+                df = pd.concat(
+                    [
+                        df,
+                        pd.DataFrame(
+                            {
+                                "structure": [structure],
+                                "image": [image],
+                                "metadata": [metadata],
+                            }
+                        ),
+                    ]
+                )
+            except FileNotFoundError as e:
+                print(f"Skipping {i} as it is missing one of the required files: {e}")
+                continue
 
         # Split the dataset
         train_df, valid_df = train_test_split(df, test_size=0.2)
