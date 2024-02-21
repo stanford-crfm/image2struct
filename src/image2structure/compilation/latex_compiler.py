@@ -376,7 +376,11 @@ class LatexCompiler(Compiler):
         list_tex_code: List[str] = self.search_for_latex_files(data_path, work_dir)
 
         # 3. Delimit the content
-        categories: List[str] = self._categories
+        categories: List[str] = [
+            category
+            for category in self._categories
+            if self._num_compiled_instances.get(category, 0) < self._num_instances
+        ]
         delimited_content: Dict[str, List[str]] = {
             category: [] for category in categories
         }

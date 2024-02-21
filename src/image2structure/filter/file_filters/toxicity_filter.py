@@ -158,7 +158,12 @@ class ToxicityFilter(FileFilter):
         # Check if file_path is the path to a directory or file
         list_files: List[str] = []
         if os.path.isdir(file_path):
-            list_files = list_files_in_dir(file_path)
+            # Remove hidden files such as .git/* and .DS_Store
+            list_files = [
+                file
+                for file in list_files_in_dir(file_path)
+                if not file.startswith(".")
+            ]
         else:
             list_files = [file_path]
 
@@ -199,7 +204,7 @@ class ToxicityFilter(FileFilter):
                 break
         return not is_toxic, {
             "text_to_toxicity_attributes": {
-                text: attributes.to_dict()
+                text_to_file[text]: attributes.to_dict()
                 for text, attributes in result.text_to_toxicity_attributes.items()
             },
             "reason": reason,
