@@ -2,7 +2,7 @@ from typing import Any, Dict, List
 from tqdm import tqdm
 from datasets import Dataset
 from sklearn.model_selection import train_test_split
-from datasets import DatasetDict
+from datasets import DatasetDict, Features, Value, Image as HFImage, Sequence
 
 import argparse
 import os
@@ -148,6 +148,24 @@ def main():
         valid_df, test_df = train_test_split(df, test_size=0.2)
         valid_dataset = Dataset.from_pandas(valid_df).map(transform).shuffle()
         test_dataset = Dataset.from_pandas(test_df).map(transform).shuffle()
+
+        # Remove the '__index_level_0__' column from the datasets
+        if "__index_level_0__" in valid_dataset.column_names:
+            print("Removing __index_level_0__")
+            valid_dataset = valid_dataset.remove_columns("__index_level_0__")
+        if "__index_level_0__" in test_dataset.column_names:
+            print("Removing __index_level_0__")
+            test_dataset = test_dataset.remove_columns("__index_level_0__")
+
+        # Define the features of the dataset
+        features_dict = {
+            column: Value("string") for column in valid_dataset.column_names
+        }
+        features_dict["image"] = HFImage()
+        features_dict["assets"] = Sequence(Value("string"))
+        features = Features(features_dict)
+        valid_dataset = valid_dataset.cast(features)
+        test_dataset = test_dataset.cast(features)
 
         # Push the dataset to the hub
         dataset_dict = DatasetDict({"validation": valid_dataset, "test": test_dataset})
