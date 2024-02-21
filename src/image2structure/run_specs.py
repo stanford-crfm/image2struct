@@ -8,7 +8,7 @@ import os
 from image2structure.runner import Runner
 from image2structure.filter.file_filters.toxicity_filter import ToxicityFilter
 from image2structure.filter.fetch_filters.date_fetch_filter import DateFetchFilter
-from image2structure.filter.fetch_filters.before_date_fetch_filter import (
+from image2structure.filter.fetch_filters.after_date_fetch_filter import (
     AfterDateFetchFilter,
 )
 
