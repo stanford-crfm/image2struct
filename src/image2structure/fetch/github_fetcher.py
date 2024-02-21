@@ -118,7 +118,7 @@ class GitHubFetcher(Fetcher):
                 for item in response.json()["items"]
             ]
         else:
-            self.change_internal_dates()
+            self.change_internal_dates(days=1)
             time.sleep(10)
             raise ScrapeError(f"Failed to retrieve data: {response.status_code}")
 
