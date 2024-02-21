@@ -34,6 +34,7 @@ huggingface-hub==0.20.3
 identify==2.5.35
 idna==3.4
 ImageHash==4.3.1
+imslp==0.2.3
 iniconfig==2.0.0
 Jinja2==3.1.2
 joblib==1.3.2

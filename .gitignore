@@ -2,6 +2,7 @@ data/*
 old_data/*
 src/image2structure/compilation/webpage/test_data/valid_repo/_site/feed.xml
 tmp/*
+credentials/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -156,3 +157,9 @@ dmypy.json
 
 # Cython debug symbols
 cython_debug/
+
+# For Macs
+.DS_Store
+
+# IDEs
+.idea/

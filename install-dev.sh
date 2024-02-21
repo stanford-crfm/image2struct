@@ -16,7 +16,7 @@ fi
 pip install -r requirements.txt
 # upgrade pip to install in edit mode without setup.py
 pip install --upgrade pip
-# Install HELM in edit mode
+# Install Image2Structure in edit mode
 pip install -e ".[all,dev]"
 # Check dependencies
 pip check
