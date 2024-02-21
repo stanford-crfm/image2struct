@@ -1,3 +1,4 @@
+from typing import Any, Dict, List
 from tqdm import tqdm
 from datasets import Dataset
 from sklearn.model_selection import train_test_split
@@ -9,6 +10,7 @@ import io
 from PIL import Image
 import base64
 import pandas as pd
+import json
 
 
 def load_image(image_path: str) -> Image.Image:
@@ -42,7 +44,21 @@ def transform(row: dict) -> dict:
         row["structure"] = load_archive(row["structure"])
     else:
         row["structure"] = load_file(row["structure"])
-    row["metadata"] = load_file(row["metadata"])
+    metadata_str: str = load_file(row["metadata"])
+    metadata: Dict[str, Any] = json.loads(metadata_str)
+    for key in metadata:
+        if key != "assets":
+            row[key] = metadata[key]
+        else:
+            assets: List[str] = []  # Base64 assets
+            for asset in metadata[key]:
+                with open(asset, "rb") as file:
+                    assets.append(base64.b64encode(file.read()).decode("utf-8"))
+            row[key] = assets
+
+    del row["metadata"]
+    if "assets" not in row:
+        row["assets"] = []
     return row
 
 
