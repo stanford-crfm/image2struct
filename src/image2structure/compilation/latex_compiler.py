@@ -1,9 +1,6 @@
 from typing import Any, Dict, Optional, Tuple, List
-from latex import build_pdf
-from PIL import Image
 
 import os
-import io
 import shutil
 import re
 import numpy as np
@@ -14,13 +11,13 @@ from image2structure.compilation.compiler import (
     CompilationError,
     CompilationResult,
 )
-from image2structure.compilation.utils import pdf_to_image
 from image2structure.compilation.tex.constants import (
     TEX_DELIMITERS,
     TEX_BEGIN,
     TEX_END,
 )
 from image2structure.fetch.fetcher import ScrapeResult
+from image2structure.compilation.tex.compilation import latex_to_image
 
 
 class LatexCompiler(Compiler):
@@ -47,48 +44,6 @@ class LatexCompiler(Compiler):
         # i.e. we should not take 100 equations from the same paper
         self._max_elt_per_category = max_elt_per_category
         self._num_instances = num_instances
-
-    @staticmethod
-    def latex_to_pdf(latex_code: str, assets_path: str) -> io.BytesIO:
-        """Convert a LaTeX code to a PDF.
-
-        Args:
-            latex_code: The LaTeX code.
-            assets_path: The path to the assets.
-
-        Returns:
-            io.BytesIO: The PDF as a byte stream.
-        """
-        # Compiling LaTeX code to PDF
-        path = os.path.join(os.path.abspath(os.path.dirname(__file__)), assets_path)
-        pdf = build_pdf(latex_code, texinputs=[path, ""])
-        return io.BytesIO(pdf.data)  # Convert PDF to a byte stream
-
-    @staticmethod
-    def latex_to_image(
-        latex_code: str,
-        assets_path: str,
-        crop: bool = False,
-        resize_to: Optional[Tuple[int, int]] = None,
-    ) -> Tuple[Optional[Image.Image], Tuple[int, int]]:
-        """Convert a LaTeX code to an image.
-
-        Args:
-            latex_code: The LaTeX code.
-            assets_path: The path to the assets.
-            crop: Whether to crop the image to remove the white border.
-            resize_to: The size to resize the image to.
-
-        Returns:
-            Optional[Image.Image]: The image (will be None if the conversion failed).
-            Tuple[int, int]: The size of the image, (0, 0) if the conversion failed.
-        """
-        try:
-            pdf_stream = LatexCompiler.latex_to_pdf(latex_code, assets_path=assets_path)
-            image = pdf_to_image(pdf_stream, crop=crop, resize_to=resize_to)
-            return image, image.size
-        except Exception:
-            return None, (0, 0)
 
     @staticmethod
     def get_asset_names_used(latex_code: str) -> List[str]:
@@ -312,7 +267,7 @@ class LatexCompiler(Compiler):
             for tex_code in list_of_content:
                 try:
                     # Render the image
-                    image, _ = LatexCompiler.latex_to_image(
+                    image, _ = latex_to_image(
                         TEX_BEGIN + tex_code + TEX_END,
                         assets_path=assets_path,
                         crop=True,
