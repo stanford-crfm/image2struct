@@ -82,7 +82,7 @@ def get_webpage_runner(
     )
 
     fetch_filters = [
-        AfterDateFetchFilter(date_created_before),
+        AfterDateFetchFilter(date_created_after),
         GitHubFetchFilter(),
         DateFetchFilter(max_instances_per_date=max_instances_per_date),
     ]
