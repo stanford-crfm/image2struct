@@ -59,6 +59,10 @@ class Fetcher(ABC):
             raise ScrapeError("No more results available for the given date range.")
 
     @abstractmethod
+    def notify_change_dates(self):
+        pass
+
+    @abstractmethod
     def scrape(self, num_instances: int) -> List[ScrapeResult]:
         """
         Scrape the data from the given scrape configuration.

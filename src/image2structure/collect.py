@@ -115,6 +115,7 @@ def run(runner: Runner, args: argparse.Namespace) -> None:
         not num_instances_collected
         or min(num_instances_collected.values()) < args.num_instances
     ):
+        notified_needs_to_change_date: bool = False
         try:
             scrape_results: List[ScrapeResult] = runner.fetcher.scrape(
                 args.num_instances_at_once
@@ -142,6 +143,13 @@ def run(runner: Runner, args: argparse.Namespace) -> None:
                             f"Data did not pass fetcher filter {filter.name}: {scrape_result}"
                         )
                         should_continue = True
+                        # We can no longer collect data fron this date
+                        # Notify the fetcher the first time to change
+                        # internal dates
+                        if filter.name == "DateFetchFilter":
+                            if not notified_needs_to_change_date:
+                                runner.fetcher.notify_change_dates()
+                                notified_needs_to_change_date = True
                         break
                 except FilterError as e:
                     print(f"Failed to run fetch filter {filter.name}: {e}")

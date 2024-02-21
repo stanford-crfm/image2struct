@@ -43,7 +43,7 @@ def get_args_parser() -> argparse.Namespace:
     parser.add_argument(
         "--num-instances-at-once",
         type=int,
-        default=50,
+        default=25,
         help="The number of instances to scrape at once",
     )
     parser.add_argument(
