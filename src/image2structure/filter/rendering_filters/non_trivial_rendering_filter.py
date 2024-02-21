@@ -5,7 +5,10 @@ import numpy as np
 import imagehash
 import threading
 
-from image2structure.filter.rendering_filters.rendering_filter import RenderingFilter
+from image2structure.filter.rendering_filters.rendering_filter import (
+    RenderingFilter,
+    RenderingFilterError,
+)
 
 
 class NonTrivialRenderingFilter(RenderingFilter):
@@ -131,7 +134,12 @@ class NonTrivialRenderingFilter(RenderingFilter):
             Dict[str, Any]: Additional information about the image.
         """
         # Open the image
-        image = Image.open(image_path)
+        try:
+            image = Image.open(image_path)
+        except FileNotFoundError as e:
+            raise RenderingFilterError(
+                f"Error in non_trivial_rendering_filter: {e}"
+            ) from e
         image_np = np.array(image)
         infos: Dict[str, Any] = {}
 
