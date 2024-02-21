@@ -9,7 +9,7 @@ from image2structure.runner import Runner
 from image2structure.filter.file_filters.toxicity_filter import ToxicityFilter
 from image2structure.filter.fetch_filters.date_fetch_filter import DateFetchFilter
 from image2structure.filter.fetch_filters.before_date_fetch_filter import (
-    BeforeDateFetchFilter,
+    AfterDateFetchFilter,
 )
 
 
@@ -82,7 +82,7 @@ def get_webpage_runner(
     )
 
     fetch_filters = [
-        BeforeDateFetchFilter(date_created_before),
+        AfterDateFetchFilter(date_created_before),
         GitHubFetchFilter(),
         DateFetchFilter(max_instances_per_date=max_instances_per_date),
     ]
@@ -157,7 +157,7 @@ def get_latex_runner(
     )
 
     fetch_filters: List[FetchFilter] = [
-        BeforeDateFetchFilter(date_created_before),
+        AfterDateFetchFilter(date_created_after),
         DateFetchFilter(max_instances_per_date=max_instances_per_date),
     ]
     file_filters: List[FileFilter] = [get_toxicity_filter()]

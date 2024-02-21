@@ -1,14 +1,14 @@
 import datetime
 
 from image2structure.filter.fetch_filters.before_date_fetch_filter import (
-    BeforeDateFetchFilter,
+    AfterDateFetchFilter,
 )
 from image2structure.fetch.fetcher import ScrapeResult
 
 
-class TestBeforeDateFetchFilter:
+class TestAfterDateFetchFilter:
     def setup_method(self):
-        self.fetch_filter = BeforeDateFetchFilter(datetime.datetime(2022, 1, 1))
+        self.fetch_filter = AfterDateFetchFilter(datetime.datetime(2022, 1, 1))
 
     def test_filter(self):
         # First scrape result
