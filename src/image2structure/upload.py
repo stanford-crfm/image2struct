@@ -48,7 +48,7 @@ def transform(row: dict) -> dict:
     metadata: Dict[str, Any] = json.loads(metadata_str)
     for key in metadata:
         if key != "assets":
-            row[key] = metadata[key]
+            row[key] = json.dumps(metadata[key], indent=4)
         else:
             assets: List[str] = []  # Base64 assets
             for asset in metadata[key]:

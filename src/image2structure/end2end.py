@@ -86,10 +86,10 @@ def main():
         for i, category in enumerate(["css", "html", "javascript"]):
             webpage_suffix: str = (
                 f"webpage --language {category} --port {4000 + i} --max_size_kb {100}"
-                f" >> {args.destination_path}/logs/{args.type}/{category}.log"
             )
             collect_commands.append(
                 f"{command_base} --tmp-path {args.destination_path}/tmp/{args.type}/{category} {webpage_suffix}"
+                f" >> {args.destination_path}/logs/{args.type}/{category}.log"
             )
     elif args.type == "latex":
         for i, category in enumerate(
