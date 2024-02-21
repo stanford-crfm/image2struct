@@ -163,16 +163,16 @@ class ToxicityFilter(FileFilter):
             list_files = [file_path]
 
         # Read the content of the files
-        texts: List[str] = []
+        text_to_file: Dict[str, str] = {}
         for file in list_files:
             try:
                 with open(os.path.join(file_path, file), "r") as f:
-                    texts.append(f.read())
+                    text_to_file[f.read()] = file
             except UnicodeDecodeError:
                 pass
 
         # Create a request to the Perspective API
-        request = PerspectiveAPIRequest(text_batch=texts)
+        request = PerspectiveAPIRequest(text_batch=text_to_file.keys())
         result: PerspectiveAPIRequestResult = self.get_toxicity_scores(request)
 
         # If the request was not successful, return False as we could not filter the files
@@ -180,7 +180,7 @@ class ToxicityFilter(FileFilter):
             return False, {
                 "error": result.error,
                 "text_to_toxicity_attributes": {
-                    text: attributes.to_dict()
+                    text_to_file[text]: attributes.to_dict()
                     for text, attributes in result.text_to_toxicity_attributes.items()
                 },
             }
