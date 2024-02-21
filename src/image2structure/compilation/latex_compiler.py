@@ -218,7 +218,16 @@ class LatexCompiler(Compiler):
                         end_idx = lines.index(line)
                         if start_idx is not None and end_idx is not None:
                             # We only add the content to the category if it contains the must_contain string
-                            if must_contain is None or must_contain in content:
+                            cannot_contain: List[str] = [
+                                "\\ref{",
+                                "\\cite{",
+                                "\\eqref{",
+                            ]  # We do not want to include references
+                            if (
+                                must_contain is None
+                                or must_contain in content
+                                and all([c not in content for c in cannot_contain])
+                            ):
                                 delimited_content[category].append(content)
                             start_idx, end_idx = None, None
                             content = ""
