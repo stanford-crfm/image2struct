@@ -128,7 +128,12 @@ class ToxicityFilter(FileFilter):
                 )
 
             with self._client_lock:
-                batch_request.execute()
+                try:
+                    batch_request.execute()
+                except Exception as e:
+                    raise FileFilterError(
+                        f"Error was thrown when making a request to Perspective API: {e}"
+                    ) from e
             batch_response = text_to_response
 
         except (BatchError, HttpLib2Error, HttpError) as e:

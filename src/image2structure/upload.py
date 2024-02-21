@@ -139,6 +139,9 @@ def main():
                 print(f"Skipping {i} as it is missing one of the required files: {e}")
                 continue
 
+        # Remove duplicates
+        df = df.drop_duplicates()
+
         # Split the dataset
         train_df, valid_df = train_test_split(df, test_size=0.2)
         train_dataset = Dataset.from_pandas(train_df).map(transform).shuffle()
