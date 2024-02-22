@@ -314,6 +314,17 @@ def run(runner: Runner, args: argparse.Namespace) -> None:
                     output_path, category, "structures", f"{num_id}{extension}"
                 )
                 if os.path.isdir(compilation_result.data_path):
+                    # First delete all files that we do not want to include
+                    # in the tar.gz. This is to avoid including the .git
+                    # directory and other files that are not necessary such
+                    # as the _site directory. We filter these files
+                    # by removing the folder that starts with an underscore
+                    # or a dot.
+                    for root, dirs, files in os.walk(compilation_result.data_path):
+                        for dir in dirs:
+                            if dir.startswith(("_site", ".")):
+                                shutil.rmtree(os.path.join(root, dir))
+
                     # Compress the directory in .tar.gz to the instance_structure_path
                     shutil.make_archive(
                         instance_structure_path,
