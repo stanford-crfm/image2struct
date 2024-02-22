@@ -1,6 +1,7 @@
 from typing import Any, Dict, List, Tuple, Optional
 
 import os
+import time
 
 from image2structure.compilation.compiler import (
     Compiler,
@@ -22,10 +23,12 @@ class WebpageCompiler(Compiler):
         timeout: int,
         verbose: bool,
         screenshot_options: ScreenshotOptions,
+        screenschot_max_tries: int = 5,
     ):
         super().__init__(timeout, verbose)
         self._port = port
         self._screenshot_options = screenshot_options
+        self._max_tries = screenschot_max_tries
 
     def compile(
         self,
@@ -64,16 +67,33 @@ class WebpageCompiler(Compiler):
 
         # Take a screenshot of a random page
         rendering_path: str = os.path.join(destination_path, "rendering.png")
-        try:
-            scheenshot_options = self._screenshot_options
-            actions = save_random_screenshot(
-                rendering_path, port=self._port, options=scheenshot_options
-            )
-            infos["actions"] = actions
-        except Exception as e:
-            print(f"Failed to take a screenshot: {e}")
-            server.stop()
-            raise CompilationError(f"Failed to take a screenshot: {e}")
+        success = False
+        error: Exception
+        for i_try in range(self._max_tries):
+            try:
+                scheenshot_options = self._screenshot_options
+                actions = save_random_screenshot(
+                    rendering_path, port=self._port, options=scheenshot_options
+                )
+                infos["actions"] = actions
+            except Exception as e:
+                if "net::ERR_CONNECTION_REFUSED" in str(e):
+                    print(
+                        f"Failed to take a screenshot: {e} (try {i_try + 1}/{self._max_tries})."
+                        " Retrying..."
+                    )
+                    error = e
+                    server.stop()
+                    time.sleep(0.5)
+                    server.start()
+                    time.sleep(0.5)
+                else:
+                    # Do not retry
+                    break
+
+        if not success:
+            print(f"Failed to take a screenshot after {self._max_tries} tries: {error}")
+            raise CompilationError(f"Failed to take a screenshot: {error}")
 
         # Stop the server
         server.stop()
