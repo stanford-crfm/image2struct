@@ -144,8 +144,8 @@ def fetch_music_sheets(
                         break
 
                     # Add a delay to avoid subscription prompt
-                    hlog("Sleeping for 16 seconds...")
-                    time.sleep(16)
+                    hlog("Sleeping for 5 seconds...")
+                    time.sleep(5)
 
                 if generated_count >= num_examples:
                     hlog(f"Generated {num_examples} examples. Exiting...")
