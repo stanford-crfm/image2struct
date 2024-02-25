@@ -25,7 +25,24 @@ Image.MAX_IMAGE_PIXELS = 700000000
 
 """
 Pull music sheets from IMSL (International Music Score Library Project) to generate the MusicSheets2LilyPond dataset.
-The sheet music classifier was trained on sheet music up to 2012 and achieved an accuracy of 99.2% on the test set.
+
+Data generation procedure:
+
+1. Pull the latest sheet music from IMSLP with the Python wrapper
+   - Each piece has multiple versions.
+   - Each sheet of music has metadata, including the upload date. 
+      Filter out sheet music with upload dates outside of our desired range.
+2. Select a random page, but preferably not the first two pages (which could be a title page or table of contents) 
+and the last two pages (which could be blank pages), and generate a PNG image file of the random page.
+3. Use the trained sheet music classifier to filter out images that are not of valid sheet music
+The sheet music classifier is a pretrained ResNet18, finetuned on a sheet music dataset training set. 
+The sheet music dataset was curated by us by labeling music sheets up to 2012 and consists of 100 sheet music 
+and 100 non-sheet music pages in the train split.
+   - We selected the best model with early stopping based on the performance of the validation set.
+   - The model achieves a 99.2% accuracy on the test set, which consists of 500 examples in total.
+   - Before relying on the sheet music classifier, we would get up to 10 non-sheet music pages for every 100 examples.
+   After using the classifier, we would not get a single non-sheet music after generating more than 1800 examples.
+4. If we successfully generated a valid image with sheet music, move on to the next piece.
 
 Usage: 
 python experimental/pull_music_sheets.py <start_year> <end_year> -n <num_examples> -o <output_dir> -c <credentials_path>
