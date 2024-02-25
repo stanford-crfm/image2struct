@@ -20,7 +20,7 @@ from image2structure.util.image_utils import pdf_to_image, is_mostly_white
 
 
 # Increase the maximum number of pixels allowed
-Image.MAX_IMAGE_PIXELS = 400000000
+Image.MAX_IMAGE_PIXELS = 700000000
 
 
 """
