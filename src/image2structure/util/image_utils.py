@@ -6,7 +6,7 @@ from PIL import ImageOps
 
 
 # Increase the maximum number of pixels allowed
-Image.MAX_IMAGE_PIXELS = 280000000
+Image.MAX_IMAGE_PIXELS = 400000000
 
 
 def is_mostly_white(
