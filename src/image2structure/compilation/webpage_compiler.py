@@ -76,6 +76,7 @@ class WebpageCompiler(Compiler):
                     rendering_path, port=self._port, options=scheenshot_options
                 )
                 infos["actions"] = actions
+                success = True
             except Exception as e:
                 if "net::ERR_CONNECTION_REFUSED" in str(e):
                     print(
