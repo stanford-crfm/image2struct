@@ -40,6 +40,9 @@ class ArxivFetcher(Fetcher):
         self._estimate_paper_per_day: float = 100.0
         self._estimate_day_count: int = 1
 
+    def notify_change_dates(self):
+        self._remaining_results = []
+
     def scrape(self, num_instances: int) -> List[ScrapeResult]:
         """
         Scrape the data from the given scrape configuration.

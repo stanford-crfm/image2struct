@@ -2,7 +2,7 @@ from typing import Any, Dict, List
 from tqdm import tqdm
 from datasets import Dataset
 from sklearn.model_selection import train_test_split
-from datasets import DatasetDict
+from datasets import DatasetDict, Features, Value, Image as HFImage, Sequence
 
 import argparse
 import os
@@ -37,13 +37,6 @@ def load_archive(archive_path: str) -> str:
 
 def transform(row: dict) -> dict:
     row["image"] = load_image(row["image"])
-    extension: str = os.path.splitext(row["structure"])[-1]
-    if row["structure"].endswith(".tar.gz"):
-        extension = ".tar.gz"
-    if extension == ".tar.gz" or extension == ".zip":
-        row["structure"] = load_archive(row["structure"])
-    else:
-        row["structure"] = load_file(row["structure"])
     metadata_str: str = load_file(row["metadata"])
     metadata: Dict[str, Any] = json.loads(metadata_str)
     for key in metadata:
@@ -117,12 +110,20 @@ def main():
 
         # Load the structure
         df: pd.DataFrame = pd.DataFrame()
+        structure_set = set()
         for i in tqdm(range(num_data_points), desc="Loading data"):
             try:
-                structure = os.path.join(structure_path, f"{i}{extension}")
+                structure_file = os.path.join(structure_path, f"{i}{extension}")
+                structure: str
+                if extension == ".tar.gz" or extension == ".zip":
+                    structure = load_archive(structure_file)
+                else:
+                    structure = load_file(structure_file)
+                if structure in structure_set:
+                    continue
+                structure_set.add(structure)
                 image = os.path.join(image_path, f"{i}.png")
                 metadata = os.path.join(metadata_path, f"{i}.json")
-                # ignore assets for now
                 df = pd.concat(
                     [
                         df,
@@ -140,18 +141,35 @@ def main():
                 continue
 
         # Remove duplicates
-        df = df.drop_duplicates()
+        # Only check the structure
+        df = df.drop_duplicates(subset=["structure"])
 
         # Split the dataset
-        train_df, valid_df = train_test_split(df, test_size=0.2)
-        train_dataset = Dataset.from_pandas(train_df).map(transform).shuffle()
+        valid_df, test_df = train_test_split(df, test_size=0.2)
         valid_dataset = Dataset.from_pandas(valid_df).map(transform).shuffle()
+        test_dataset = Dataset.from_pandas(test_df).map(transform).shuffle()
+
+        # Remove the '__index_level_0__' column from the datasets
+        if "__index_level_0__" in valid_dataset.column_names:
+            print("Removing __index_level_0__")
+            valid_dataset = valid_dataset.remove_columns("__index_level_0__")
+        if "__index_level_0__" in test_dataset.column_names:
+            print("Removing __index_level_0__")
+            test_dataset = test_dataset.remove_columns("__index_level_0__")
+
+        # Define the features of the dataset
+        features_dict = {
+            column: Value("string") for column in valid_dataset.column_names
+        }
+        features_dict["image"] = HFImage()
+        features_dict["assets"] = Sequence(Value("string"))
+        features = Features(features_dict)
+        valid_dataset = valid_dataset.cast(features)
+        test_dataset = test_dataset.cast(features)
 
         # Push the dataset to the hub
-        dataset_dict = DatasetDict(
-            {"train": train_dataset, "validation": valid_dataset}
-        )
-        dataset_dict.push_to_hub("stanford-crfm/i2s-webpage", config_name=category)
+        dataset_dict = DatasetDict({"validation": valid_dataset, "test": test_dataset})
+        dataset_dict.push_to_hub(args.dataset_name, config_name=category)
 
 
 if __name__ == "__main__":

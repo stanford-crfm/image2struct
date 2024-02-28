@@ -39,19 +39,19 @@ class TestGitHubFetcher:
             # Set fixed dates to avoid flakiness
             date_created_after=datetime.datetime(2023, 1, 1),
             date_created_before=datetime.datetime(2023, 2, 1),
-            language="python",
+            language="css",
             timeout=30,
-            max_size_kb=1,
+            max_size_kb=10,
             verbose=False,
         )
         results = fetcher.scrape(100)
-        assert len(results) == 19
+        assert len(results) == 46
 
     def test_download_runs(self):
         fetcher = GitHubFetcher(
             # Set fixed dates to avoid flakiness
             date_created_after=datetime.datetime(2021, 1, 1),
-            date_created_before=datetime.datetime(2022, 1, 1),
+            date_created_before=datetime.datetime(2021, 1, 2),
             language="html",
             timeout=30,
             max_size_kb=1,
@@ -80,8 +80,8 @@ class TestGitHubFetcher:
             result = ScrapeResult(
                 download_url="https://github.com/fakeuser/fakerepo",
                 instance_name="fakerepo",
-                date=datetime.datetime.now(),
                 additional_info={},
+                date=datetime.datetime.now(),
             )
             self.fetcher.download("invalid_path", result)
         assert not os.path.exists("invalid_path/fake_repo")

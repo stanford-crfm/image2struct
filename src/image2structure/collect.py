@@ -8,10 +8,11 @@ import json
 import os
 import shutil
 import tarfile
+import time
 
 from .runner import Runner
 from .run_specs import _RUNNER_REGISTRY
-from image2structure.fetch.fetcher import ScrapeResult
+from image2structure.fetch.fetcher import ScrapeResult, ScrapeError
 from image2structure.filter.utils import FilterError
 from image2structure.compilation.compiler import CompilationError, CompilationResult
 from image2structure.fetch.fetcher import DownloadError
@@ -114,9 +115,15 @@ def run(runner: Runner, args: argparse.Namespace) -> None:
         not num_instances_collected
         or min(num_instances_collected.values()) < args.num_instances
     ):
-        scrape_results: List[ScrapeResult] = runner.fetcher.scrape(
-            args.num_instances_at_once
-        )
+        notified_needs_to_change_date: bool = False
+        try:
+            scrape_results: List[ScrapeResult] = runner.fetcher.scrape(
+                args.num_instances_at_once
+            )
+        except ScrapeError as e:
+            print(f"Failed to scrape data: {e}")
+            time.sleep(60)
+            continue
         for scrape_result in scrape_results:
             # Create clean temporaty working directory
             if os.path.exists(tmp_dir):
@@ -136,6 +143,13 @@ def run(runner: Runner, args: argparse.Namespace) -> None:
                             f"Data did not pass fetcher filter {filter.name}: {scrape_result}"
                         )
                         should_continue = True
+                        # We can no longer collect data fron this date
+                        # Notify the fetcher the first time to change
+                        # internal dates
+                        if filter.name == "DateFetchFilter":
+                            if not notified_needs_to_change_date:
+                                runner.fetcher.notify_change_dates()
+                                notified_needs_to_change_date = True
                         break
                 except FilterError as e:
                     print(f"Failed to run fetch filter {filter.name}: {e}")
@@ -300,6 +314,17 @@ def run(runner: Runner, args: argparse.Namespace) -> None:
                     output_path, category, "structures", f"{num_id}{extension}"
                 )
                 if os.path.isdir(compilation_result.data_path):
+                    # First delete all files that we do not want to include
+                    # in the tar.gz. This is to avoid including the .git
+                    # directory and other files that are not necessary such
+                    # as the _site directory. We filter these files
+                    # by removing the folder that starts with an underscore
+                    # or a dot.
+                    for root, dirs, files in os.walk(compilation_result.data_path):
+                        for dir in dirs:
+                            if dir.startswith(("_site", ".")):
+                                shutil.rmtree(os.path.join(root, dir))
+
                     # Compress the directory in .tar.gz to the instance_structure_path
                     shutil.make_archive(
                         instance_structure_path,

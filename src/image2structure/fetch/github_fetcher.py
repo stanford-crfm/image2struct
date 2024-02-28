@@ -47,6 +47,9 @@ class GitHubFetcher(Fetcher):
         self._page: int = 1
         self._max_size_kb: int = max_size_kb
 
+    def notify_change_dates(self):
+        self.change_internal_dates(days=1)
+
     def scrape(self, num_instances: int) -> List[ScrapeResult]:
         """
         Scrape num_instances data points.
@@ -63,9 +66,8 @@ class GitHubFetcher(Fetcher):
         query_parameters = {
             "size": f"<={self._max_size_kb}",
             "created": (
-                f">={self._date_created_after.strftime('%Y-%m-%d')}"
-                if self._date_created_before is None
-                else f"{self._date_created_after.strftime('%Y-%m-%d')}..{self._date_created_before.strftime('%Y-%m-%d')}"  # noqa: E501
+                f"{self._date_created_after_internal.strftime('%Y-%m-%d')}.."
+                f"{self._date_created_before_internal.strftime('%Y-%m-%d')}"
             ),
         }
         if self._language.lower() not in [

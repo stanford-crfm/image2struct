@@ -3,8 +3,12 @@ from PIL import Image
 
 import numpy as np
 import imagehash
+import threading
 
-from image2structure.filter.rendering_filters.rendering_filter import RenderingFilter
+from image2structure.filter.rendering_filters.rendering_filter import (
+    RenderingFilter,
+    RenderingFilterError,
+)
 
 
 class NonTrivialRenderingFilter(RenderingFilter):
@@ -42,6 +46,7 @@ class NonTrivialRenderingFilter(RenderingFilter):
         self.threshold_white_percentage: float = threshold_white_percentage
         self.verbose: bool = verbose
         self.hashes: set = set()
+        self._lock: threading.Lock = threading.Lock()
 
     def add_hash(
         self,
@@ -73,9 +78,10 @@ class NonTrivialRenderingFilter(RenderingFilter):
             hash = self.hashfunc(image, hash_size=self.hash_size_other_imgs)
 
         # Add the hash to the set
-        if hash in self.hashes:
-            return False, hash
-        self.hashes.add(hash)
+        with self._lock:
+            if hash in self.hashes:
+                return False, hash
+            self.hashes.add(hash)
         return True, hash
 
     def compute_percentage_of_white_pixels(self, image_np: np.ndarray) -> float:
@@ -128,7 +134,12 @@ class NonTrivialRenderingFilter(RenderingFilter):
             Dict[str, Any]: Additional information about the image.
         """
         # Open the image
-        image = Image.open(image_path)
+        try:
+            image = Image.open(image_path)
+        except FileNotFoundError as e:
+            raise RenderingFilterError(
+                f"Error in non_trivial_rendering_filter: {e}"
+            ) from e
         image_np = np.array(image)
         infos: Dict[str, Any] = {}
 

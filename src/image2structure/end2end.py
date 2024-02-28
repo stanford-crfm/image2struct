@@ -43,7 +43,7 @@ def get_args_parser() -> argparse.Namespace:
     parser.add_argument(
         "--num-instances-at-once",
         type=int,
-        default=50,
+        default=25,
         help="The number of instances to scrape at once",
     )
     parser.add_argument(
@@ -64,7 +64,6 @@ def get_args_parser() -> argparse.Namespace:
         required=True,
         help="The latest date to scrape data from",
     )
-    parser.add_argument("--verbose", action="store_true", help="Print verbose output")
     return parser.parse_args()
 
 
@@ -78,9 +77,8 @@ def main():
         f" --max-instances-per-date {args.max_instances_per_date}"
         f" --date-from {args.date_from} --date-to {args.date_to}"
         f" --timeout {args.timeout} --destination-path {args.destination_path}"
+        " --verbose"
     )
-    if args.verbose:
-        command_base += " --verbose"
     collect_commands: List[str] = []
     if args.type == "webpage":
         for i, category in enumerate(["css", "html", "javascript"]):
@@ -121,8 +119,8 @@ def main():
     print(f"Uploading data to {args.huggingface_base}/{args.type}")
     upload_command: str = (
         f"image2structure-upload --data-path {args.destination_path}/{args.type}"
-        f" --dataset-name {args.huggingface_base}/{args.type}"
+        f" --dataset-name {args.huggingface_base}/i2s-{args.type}"
     )
     print(f"Running the following command:\n\t- {upload_command}")
     os.system(upload_command)
-    print(f"Data uploaded to {args.huggingface_base}/{args.type}")
+    print(f"Data uploaded to {args.huggingface_base}/i2s-{args.type}")
