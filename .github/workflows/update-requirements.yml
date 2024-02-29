@@ -76,6 +76,8 @@ jobs:
         env:
           TOKEN_GITHUB: ${{ secrets.TOKEN_GITHUB }}
           PERSPECTIVE_API_KEY: ${{ secrets.PERSPECTIVE_API_KEY }}
+          IMSLP_USERNAME: ${{ secrets.IMSLP_USERNAME }}
+          IMSLP_PASSWORD: ${{ secrets.IMSLP_PASSWORD }}
           TEST: ${{ matrix.test }}
           VERSION: ${{ github.head_ref || 'main' }}
       - name: Create pull request
