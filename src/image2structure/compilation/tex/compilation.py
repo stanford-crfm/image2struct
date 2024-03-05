@@ -102,7 +102,7 @@ def strip_unnecessary_latex_parts(latex_code: str) -> str:
 
     # Remove everything before \begin{document} and including it, and everything after \end{document}
     minimal_latex_code = re.sub(
-        r".*\\begin\{document\}\n", "", minimal_latex_code, flags=re.DOTALL
+        r"\\begin\{document\}\n*", "", minimal_latex_code, flags=re.DOTALL
     )
     minimal_latex_code = re.sub(
         r"\\end\{document\}.*", "", minimal_latex_code, flags=re.DOTALL
