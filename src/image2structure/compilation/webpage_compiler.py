@@ -3,6 +3,7 @@ from html2text import HTML2Text
 
 import os
 import time
+import re
 
 from image2structure.compilation.compiler import (
     Compiler,
@@ -32,7 +33,7 @@ class WebpageCompiler(Compiler):
         self._max_tries = screenschot_max_tries
         self._html2text = HTML2Text()
         self._html2text.ignore_links = True
-        self._html2text.ignore_images = True
+        self._html2text.ignore_images = False
         self._html2text.single_line_break = True
 
     def compile(
@@ -110,10 +111,18 @@ class WebpageCompiler(Compiler):
 
         assert "html" in infos
         text: str = self._html2text.handle(infos["html"])
+        # Normalize space sequences to a single space globally
+        text = re.sub(r" +", " ", text)
+        # Replace tabs with a single space
+        text = re.sub(r"\t", " ", text)
+        # Remove leading and trailing spaces on each line
+        text = re.sub(r"^[ \t]+|[ \t]+$", "", text, flags=re.MULTILINE)
+        # Remove unnecessary whitespace - multiple empty lines and tabulations
+        text = re.sub(r"\n\s*\n", "\n", text)
         compilation_result = CompilationResult(
             data_path=data_path,
             rendering_path=rendering_path,
-            text=text,
+            text=text.strip(),
             category=category,
         )
         return [compilation_result], infos
