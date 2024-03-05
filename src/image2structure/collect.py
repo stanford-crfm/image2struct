@@ -263,7 +263,7 @@ def run(runner: Runner, args: argparse.Namespace) -> None:
                 if category not in num_instances_collected:
                     # First time we collect this category
                     # Create the directories
-                    for dir in ["metadata", "images", "structures", "assets"]:
+                    for dir in ["metadata", "images", "structures", "assets", "text"]:
                         os.makedirs(
                             os.path.join(output_path, category, dir), exist_ok=True
                         )
@@ -303,6 +303,13 @@ def run(runner: Runner, args: argparse.Namespace) -> None:
                         output_path, category, "assets", asset_name
                     )
                     shutil.copy(asset_path, instance_asset_path)
+
+                # Save the text
+                instance_text_path: str = os.path.join(
+                    output_path, category, "text", f"{num_id}.txt"
+                )
+                with open(instance_text_path, "w") as f:
+                    f.write(compilation_result.text)
 
                 # Save the structure
                 extension: str = (
