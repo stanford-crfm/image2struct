@@ -1,4 +1,5 @@
 from typing import Any, Dict, List, Tuple, Optional
+from html2text import HTML2Text
 
 import os
 import time
@@ -29,6 +30,10 @@ class WebpageCompiler(Compiler):
         self._port = port
         self._screenshot_options = screenshot_options
         self._max_tries = screenschot_max_tries
+        self._html2text = HTML2Text()
+        self._html2text.ignore_links = True
+        self._html2text.ignore_images = True
+        self._html2text.single_line_break = True
 
     def compile(
         self,
@@ -72,11 +77,11 @@ class WebpageCompiler(Compiler):
         for i_try in range(self._max_tries):
             try:
                 scheenshot_options = self._screenshot_options
-                actions = save_random_screenshot(
+                infos = save_random_screenshot(
                     rendering_path, port=self._port, options=scheenshot_options
                 )
-                infos["actions"] = actions
                 success = True
+                break  # We have successfully compiled the image
             except Exception as e:
                 if "net::ERR_CONNECTION_REFUSED" in str(e):
                     print(
@@ -102,7 +107,13 @@ class WebpageCompiler(Compiler):
         category: str = "unknown"
         if scrape_result is not None and "language" in scrape_result.additional_info:
             category = scrape_result.additional_info["language"].lower()
+
+        assert "html" in infos
+        text: str = self._html2text.handle(infos["html"])
         compilation_result = CompilationResult(
-            data_path=data_path, rendering_path=rendering_path, category=category
+            data_path=data_path,
+            rendering_path=rendering_path,
+            text=text,
+            category=category,
         )
         return [compilation_result], infos

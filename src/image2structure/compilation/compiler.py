@@ -11,12 +11,18 @@ class CompilationResult:
 
     data_path: str
     """The path to the compiled data."""
+
     rendering_path: str
     """The path to the rendering of the compiled data."""
+
     category: str
     """The category of the compiled data.
     For TeX, this is the type of the environment (e.g. equation, figure, table, algorithm).
     For web pages, this can be the language used (HTML, CSS, JavaScript, etc.)."""
+
+    text: Optional[str] = None
+    """The text extracted from the compiled data."""
+
     assets_path: List[str] = field(default_factory=lambda: [])
     """The paths to the assets used in the rendering of the compiled data."""
 

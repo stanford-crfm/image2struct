@@ -41,6 +41,7 @@ class TestWebpageCompiler:
         result: CompilationResult = self.compiler.compile(
             self.repo_path, self.repo_path
         )[0][0]
+        assert result.text is not None and len(result.text) > 0
         assert os.path.exists(result.rendering_path)
         assert os.path.exists(result.data_path)
         assert result.assets_path == []

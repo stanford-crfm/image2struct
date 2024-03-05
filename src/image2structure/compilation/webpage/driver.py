@@ -1,3 +1,5 @@
+from typing import Dict, Any
+
 from selenium import webdriver
 import selenium.common.exceptions
 import time
@@ -48,7 +50,7 @@ class ScreenshotOptions:
 
 def save_random_screenshot(
     path: str, port: int, options: ScreenshotOptions = ScreenshotOptions()
-):
+) -> Dict[str, Any]:
     """Save a screenshot of a random page
 
     Args:
@@ -56,6 +58,9 @@ def save_random_screenshot(
         port (int): The port to use for the website.
         options (ScreenshotOptions, optional): The options to use for taking the screenshot.
             Defaults to ScreenshotOptions().
+
+    Returns:
+        infos (Dict[str, Any]): Additional information about the screenshot
 
     Raises:
         ValueError: If the path does not end with .png
@@ -73,9 +78,14 @@ def save_random_screenshot(
     except Exception as e:
         raise Exception(f"An unknown error occurred while initializing the driver: {e}")
 
+    # Extract the HTML of the page
+    html = driver.page_source
+
     # Take a screenshot of the page
     driver.save_screenshot(path)
     close_driver(driver)
+
+    return {"html": html}
 
 
 if __name__ == "__main__":

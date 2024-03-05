@@ -26,12 +26,13 @@ class TestLatexCompiler:
 
     def test_compile_valid_repos(self):
         src_path: str = os.path.join(self.data_path, "cl_dice")
-        compilation_result, _ = self.compiler.compile(src_path, self.dest_path)
-        assert len(compilation_result) > 0
+        compilation_results, _ = self.compiler.compile(src_path, self.dest_path)
+        assert len(compilation_results) > 0
 
         # Count number of rendered images per category
         num_images: Dict[str, int] = {}
-        for result in compilation_result:
+        for result in compilation_results:
+            assert result.text is not None and len(result.text) > 0
             if result.category not in num_images:
                 num_images[result.category] = 0
             num_images[result.category] += 1
