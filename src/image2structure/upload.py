@@ -69,6 +69,12 @@ def parse_args() -> argparse.Namespace:
         required=True,
         help="The name of the dataset to upload",
     )
+    parser.add_argument(
+        "--max-instances",
+        type=int,
+        default=-1,
+        help="The maximum number of instances to upload",
+    )
     return parser.parse_args()
 
 
@@ -88,7 +94,8 @@ def main():
         structure_path = os.path.join(data_path, "structures")
         metadata_path = os.path.join(data_path, "metadata")
         assets_path = os.path.join(data_path, "assets")
-        for path in [image_path, structure_path, metadata_path, assets_path]:
+        text_path = os.path.join(data_path, "text")
+        for path in [image_path, structure_path, metadata_path, assets_path, text_path]:
             if not os.path.exists(path):
                 raise FileNotFoundError(f"{path} does not exist")
 
@@ -122,6 +129,7 @@ def main():
                 if structure in structure_set:
                     continue
                 structure_set.add(structure)
+                text: str = load_file(os.path.join(text_path, f"{i}.txt"))
                 image = os.path.join(image_path, f"{i}.png")
                 metadata = os.path.join(metadata_path, f"{i}.json")
                 df = pd.concat(
@@ -132,6 +140,7 @@ def main():
                                 "structure": [structure],
                                 "image": [image],
                                 "metadata": [metadata],
+                                "text": [text],
                             }
                         ),
                     ]
@@ -143,6 +152,14 @@ def main():
         # Remove duplicates
         # Only check the structure
         df = df.drop_duplicates(subset=["structure"])
+
+        # Limit the number of instances
+        if args.max_instances > 0:
+            if len(df) > args.max_instances:
+                print(f"Limiting the number of instances to {args.max_instances}")
+            # Shuffle the dataset
+            df = df.sample(frac=1)
+            df = df.head(args.max_instances)
 
         # Split the dataset
         valid_df, test_df = train_test_split(df, test_size=0.2)
