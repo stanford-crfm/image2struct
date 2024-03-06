@@ -84,12 +84,12 @@ class WebpageCompiler(Compiler):
                 success = True
                 break  # We have successfully compiled the image
             except Exception as e:
+                error = e
                 if "net::ERR_CONNECTION_REFUSED" in str(e):
                     print(
                         f"Failed to take a screenshot: {e} (try {i_try + 1}/{self._max_tries})."
                         " Retrying..."
                     )
-                    error = e
                     server.stop()
                     time.sleep(0.5)
                     server.start()
