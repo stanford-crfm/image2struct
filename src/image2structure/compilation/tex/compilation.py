@@ -1,6 +1,6 @@
 # Source: https://github.com/stanford-crfm/helm/blob/main/src/helm/benchmark/scenarios/vision_language/image2structure/utils_latex.py # noqa: E501
 
-from typing import Optional, Tuple, List
+from typing import Optional, Tuple, List, Dict, Any
 
 import io
 import os
@@ -57,7 +57,6 @@ TEX_REPLACE_NUMBERING: List[Tuple[str, str]] = [
     ("{multline}", "{multline*}"),
     ("{eqnarray}", "{eqnarray*}"),
     ("{subeqnarray}", "{subeqnarray*}"),
-    ("{subequations}", "{subequations*}"),
     ("{multline}", "{multline*}"),
     ("{aligneq}", "{aligneq*}"),
 ]
@@ -83,7 +82,7 @@ def pdf_to_image(
         # Removes the white border around the image
         if crop:
             (w, h) = image.size
-            image = image.crop((0, 0, w, h - int(h * 0.13)))  # Remove pagination
+            image = image.crop((0, 0, w, h - int(h * 0.2)))  # Remove pagination
             image = image.crop(ImageOps.invert(image).getbbox())  # Remove white border
 
         # Resize the image
@@ -95,6 +94,45 @@ def pdf_to_image(
         raise Exception("PDF to Image conversion failed")
 
 
+def strip_unnecessary_latex_parts(latex_code: str) -> str:
+    """Strip unnecessary parts of the LaTeX code."""
+
+    # Remove comments
+    minimal_latex_code = re.sub(r"%.*?\n", "\n", latex_code)
+
+    # Remove \documentclass and any \usepackage lines
+    minimal_latex_code = re.sub(r"\\documentclass\{.*?\}\n", "", latex_code)
+    minimal_latex_code = re.sub(
+        r"\\usepackage(\[.*?\])?\{.*?\}\n", "", minimal_latex_code
+    )
+
+    # Remove everything before \begin{document} and including it, and everything after \end{document}
+    minimal_latex_code = re.sub(
+        r"\\begin\{document\}\n*", "", minimal_latex_code, flags=re.DOTALL
+    )
+    minimal_latex_code = re.sub(
+        r"\\end\{document\}.*", "", minimal_latex_code, flags=re.DOTALL
+    )
+
+    # Ensure \begin{...} is followed by a \n
+    minimal_latex_code = re.sub(
+        r"(\\begin\{.*?\}(\[.*?\])?)(?!\n)", r"\1\n", minimal_latex_code
+    )
+
+    # Normalize space sequences to a single space globally
+    minimal_latex_code = re.sub(r" +", " ", minimal_latex_code)
+    # Replace tabs with a single space
+    minimal_latex_code = re.sub(r"\t", " ", minimal_latex_code)
+    # Remove leading and trailing spaces on each line
+    minimal_latex_code = re.sub(
+        r"^[ \t]+|[ \t]+$", "", minimal_latex_code, flags=re.MULTILINE
+    )
+    # Remove unnecessary whitespace - multiple empty lines and tabulations
+    minimal_latex_code = re.sub(r"\n\s*\n", "\n", minimal_latex_code)
+
+    return minimal_latex_code.strip()
+
+
 def handle_latex_error(
     e: Exception,
     original_latex_code: str,
@@ -102,7 +140,7 @@ def handle_latex_error(
     crop: bool,
     resize_to: Optional[Tuple[int, int]],
     num_try_remaining: int,
-) -> Tuple[Image, Tuple[int, int]]:
+) -> Tuple[Image, Dict[str, Any]]:
     # Check for error that are caused by the original LaTeX code itself
     # and should not be fixed by trying again with a different code
     # TODO #2346: Make this list more exhaustive
@@ -180,14 +218,14 @@ def handle_latex_error(
         # and not some unclear instructions, so we do not handle it.
         # Error format: "Missing $ inserted" or "<command> allowed only in math mode"
         if "Missing $ inserted" in str(e) or " allowed only in math mode" in str_e:
-            fixed_code = f"${fixed_code}$"
+            fixed_code = f"$${fixed_code}$$"  # Use double $ to avoid inline math mode
 
         # Missing include
         # Missing includes are tolerated as the prompt suggests that it is not necessary to include them,
         # and our TEX_INCLUDES might lack some packages.
         # Error format: "LaTeX Error: Environment <env> undefined."
-        undefined_seach = re.search(r"LaTeX Error: Environment (.*) undefined", str_e)
-        if undefined_seach:
+        undefined_search = re.search(r"LaTeX Error: Environment (.*) undefined", str_e)
+        if undefined_search:
             # If a package is missing and this is our first retry, then simply include TEX_INCLUDES
             if num_try_remaining == MAX_NUM_TRIES:
                 fixed_code = fixed_code.replace(
@@ -203,7 +241,7 @@ def handle_latex_error(
                 # TEX_INCLUDES is already present, so we add the missing package
                 # Since we cannot know the name of the package that contains the missing environment,
                 # we simply hope that they are named the same way.
-                env_undefined: str = undefined_seach.group(1)
+                env_undefined: str = undefined_search.group(1)
 
                 if f"\\usepackage{{{env_undefined}}}" in fixed_code:
                     # We already tried to include the missing package, but it probably
@@ -239,7 +277,26 @@ def latex_to_image(
     crop: bool = False,
     resize_to: Optional[Tuple[int, int]] = None,
     num_try_remaining: int = MAX_NUM_TRIES,
-) -> Tuple[Image, Tuple[int, int]]:
+) -> Tuple[Image, Dict[str, Any]]:
+    """Convert a LaTeX code to an image.
+
+    Args:
+        original_latex_code (str): The LaTeX code to convert to an image.
+        assets_path (str): The path to the assets.
+        crop (bool, optional): Whether to crop the image. Defaults to False.
+        resize_to (Optional[Tuple[int, int]], optional): The size to resize the image to. Defaults to None.
+        num_try_remaining (int, optional): The number of tries remaining. Defaults to MAX_NUM_TRIES.
+
+    Returns:
+        image (Image): The image of the LaTeX code.
+        infos (Dict[str, Any]): a dictionnary containing:
+            size (Tuple[int, int]): The size of the image.
+            latex_code (str): The modified LaTeX code that was successfully compiled.
+
+    Raises:
+        OptionalDependencyNotInstalled: If LaTeX is not installed.
+        RuntimeError: If the LaTeX code cannot be converted to an image.
+    """
     # Basic LaTeX processing
     # This changes cannot break the original LaTeX code
     # Other processing will be done in the handle_latex_error function
@@ -290,7 +347,7 @@ def latex_to_image(
     try:
         pdf_stream = latex_to_pdf(latex_code, assets_path=assets_path)
         image = pdf_to_image(pdf_stream, crop=crop, resize_to=resize_to)
-        return image, image.size
+        return image, {"image_size": image.size, "latex_code": latex_code}
     except RuntimeError as e:
         if (
             str(e)

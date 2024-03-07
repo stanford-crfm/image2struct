@@ -17,7 +17,10 @@ from image2structure.compilation.tex.constants import (
     TEX_END,
 )
 from image2structure.fetch.fetcher import ScrapeResult
-from image2structure.compilation.tex.compilation import latex_to_image
+from image2structure.compilation.tex.compilation import (
+    latex_to_image,
+    strip_unnecessary_latex_parts,
+)
 
 
 class LatexCompiler(Compiler):
@@ -276,7 +279,7 @@ class LatexCompiler(Compiler):
             for tex_code in list_of_content:
                 try:
                     # Render the image
-                    image, _ = latex_to_image(
+                    image, infos = latex_to_image(
                         TEX_BEGIN + tex_code + TEX_END,
                         assets_path=assets_path,
                         crop=True,
@@ -323,11 +326,14 @@ class LatexCompiler(Compiler):
                         f.write(tex_code)
 
                     # Save the compilation
+                    assert "latex_code" in infos
+                    text: str = strip_unnecessary_latex_parts(infos["latex_code"])
                     compilations.append(
                         CompilationResult(
                             data_path=code_path,
                             rendering_path=image_path,
                             assets_path=asset_paths,
+                            text=text,
                             category=category,
                         )
                     )
@@ -347,7 +353,7 @@ class LatexCompiler(Compiler):
 
             num_done[category] = num_images
 
-        return compilations, num_done
+        return compilations, {"num_done": num_done}
 
     def compile(
         self,
@@ -405,14 +411,11 @@ class LatexCompiler(Compiler):
         # 5. Render and save some code
         (
             compilation_results,
-            num_done,
+            infos,
         ) = self.get_and_save_rendering_from_delimited_content(
             delimited_content=delimited_content,
             assets_path=work_dir,
             dest_path=destination_path,
         )
-
-        # 6. Save the information
-        infos["num_done"] = num_done
 
         return compilation_results, infos
