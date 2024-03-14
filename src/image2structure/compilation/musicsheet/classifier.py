@@ -1,6 +1,7 @@
 from PIL import Image
 from torchvision import transforms, models
 import torch
+import os
 
 
 class SheetMusicClassifier:
@@ -8,7 +9,11 @@ class SheetMusicClassifier:
     A simple classifier to determine if an image is a sheet music or not.
     """
 
-    def __init__(self, path_to_model: str = "experimental/sheet_music_classifier.pt"):
+    def __init__(self):
+        path_to_model = os.path.join(
+            os.path.dirname(os.path.realpath(__file__)),
+            "sheet_music_classifier.pt",
+        )
         self._device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         # Assume you have a model defined (or modified) as `model`
