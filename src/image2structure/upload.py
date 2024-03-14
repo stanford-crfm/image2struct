@@ -110,17 +110,19 @@ def main():
         #   list of encoded strings and stored in the column "assets"
 
         # Figure out the extension of the structure files
-        file_name: str = os.listdir(structure_path)[0]
-        extension: str = os.path.splitext(file_name)[-1]
-        if file_name.endswith(".tar.gz"):
+        first_file_name: str = os.listdir(structure_path)[0]
+        extension: str = os.path.splitext(first_file_name)[-1]
+        if first_file_name.endswith(".tar.gz"):
             extension = ".tar.gz"
 
         # Load the structure
         df: pd.DataFrame = pd.DataFrame()
         structure_set = set()
+        file_names: List[str] = os.listdir(structure_path)
         for i in tqdm(range(num_data_points), desc="Loading data"):
             try:
-                structure_file = os.path.join(structure_path, f"{i}{extension}")
+                file_name: str = file_names[i].replace(extension, "")
+                structure_file = os.path.join(structure_path, f"{file_name}{extension}")
                 structure: str
                 if extension == ".tar.gz" or extension == ".zip":
                     structure = load_archive(structure_file)
@@ -129,9 +131,9 @@ def main():
                 if structure in structure_set:
                     continue
                 structure_set.add(structure)
-                text: str = load_file(os.path.join(text_path, f"{i}.txt"))
-                image = os.path.join(image_path, f"{i}.png")
-                metadata = os.path.join(metadata_path, f"{i}.json")
+                text: str = load_file(os.path.join(text_path, f"{file_name}.txt"))
+                image = os.path.join(image_path, f"{file_name}.png")
+                metadata = os.path.join(metadata_path, f"{file_name}.json")
                 df = pd.concat(
                     [
                         df,
@@ -146,7 +148,9 @@ def main():
                     ]
                 )
             except FileNotFoundError as e:
-                print(f"Skipping {i} as it is missing one of the required files: {e}")
+                print(
+                    f"Skipping {file_name} as it is missing one of the required files: {e}"
+                )
                 continue
 
         # Remove duplicates
