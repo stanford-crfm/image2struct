@@ -3,14 +3,14 @@ import shutil
 import datetime
 import pytest
 
-from image2structure.compilation.lillypond_compiler import LillypondCompiler
+from image2structure.compilation.music_compiler import MusicCompiler
 from image2structure.fetch.fetcher import ScrapeResult
 from image2structure.compilation.compiler import CompilationError
 
 
-class TestLillypondCompiler:
+class TestMusicCompiler:
     def setup_method(self, method):
-        self.compiler = LillypondCompiler(
+        self.compiler = MusicCompiler(
             crop_sides=True,
             timeout=30,
             verbose=True,

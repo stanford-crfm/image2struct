@@ -16,7 +16,7 @@ from image2structure.util.image_utils import pdf_to_image
 from image2structure.compilation.musicsheet.classifier import SheetMusicClassifier
 
 
-class LillypondCompiler(Compiler):
+class MusicCompiler(Compiler):
 
     # The image should contain at least 50 % of white pixels
     WHITE_THRESHOLD: float = 0.5
