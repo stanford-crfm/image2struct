@@ -122,5 +122,5 @@ def main():
         f" --dataset-name {args.huggingface_base}/i2s-{args.type}"
     )
     print(f"Running the following command:\n\t- {upload_command}")
-    os.system(upload_command)
+    # os.system(upload_command)
     print(f"Data uploaded to {args.huggingface_base}/i2s-{args.type}")

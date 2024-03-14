@@ -13,6 +13,7 @@ from PIL import Image
 from tqdm import tqdm
 from torchvision import transforms, models
 import torch
+import imslp
 
 from image2structure.util.credentials_utils import get_credentials
 from image2structure.util.hierarchical_logger import htrack_block, hlog
@@ -136,6 +137,7 @@ def fetch_music_sheets(
     credentials: Dict[str, str] = get_credentials(credentials_path)
     username: str = credentials["username"]
     password: str = credentials["password"]
+    print(f"Username: {username}, password: {password}")
 
     c = client.ImslpClient(username=username, password=password)
     hlog("Login to IMSLP was successful. Created ImslpClient.\n")
@@ -157,22 +159,34 @@ def fetch_music_sheets(
         with htrack_block(
             "Searching for all works. Please be patient as this may take a few minutes."
         ):
-            results = c.search_works()
+            results = set(
+                imslp.interfaces.internal.list_works(
+                    start=0,
+                    count=100,
+                    cache=False,
+                )
+            )
             hlog(f"Found {len(results)} works.")
+        print(results)
 
         generated_count: int = 0
         with htrack_block("Processing the results..."):
             for result in tqdm(results):
                 url: str = result["permlink"]
                 if not url.startswith(imslp_url):
+                    print("Not an IMSLP URL")
                     continue
 
                 name: str = url.replace(imslp_url, "")
                 page = Page(c._site, name)
                 image_metadatas = fetch_images_metadata(page)
 
+                if len(image_metadatas) == 0:
+                    print("No image metadata")
+
                 for metadata in image_metadatas:
                     if "obj" not in metadata or metadata["obj"] is None:
+                        print("No obj in metadata")
                         continue
 
                     image: Image = metadata["obj"]
@@ -180,10 +194,12 @@ def fetch_music_sheets(
                     year: Optional[int] = int(timestamp[:4])
 
                     if year is None or year < year_range[0] or year > year_range[1]:
+                        print("Year out of range")
                         continue
 
                     file_name: str = image.imageinfo["url"].split("/")[-1]
                     if not file_name.endswith(".pdf"):
+                        print("Not a pdf")
                         continue
 
                     total_num_pages: Optional[int] = metadata["page_count"]
@@ -192,6 +208,7 @@ def fetch_music_sheets(
                         hlog(
                             f"Skipping {file_name} with {total_num_pages} pages. Too many pages."
                         )
+                        print("Too many pages")
                         continue
 
                     file_path: str = os.path.join(output_dir, file_name)
@@ -200,44 +217,45 @@ def fetch_music_sheets(
                     # Download
                     with open(file_path, "wb") as f:
                         image.download(f)
+                    generated_count += 1
 
-                    image_path: str = os.path.join(
-                        output_dir, file_name.replace(".pdf", ".png")
-                    )
+                    # image_path: str = os.path.join(
+                    #     output_dir, file_name.replace(".pdf", ".png")
+                    # )
 
-                    # Select a random page but preferably not the first two pages (which could be a title
-                    # and not the sheet music) and the last two pages (which could be a blank page)
-                    page_number: int
-                    if total_num_pages > 4:
-                        page_number = random.randint(3, total_num_pages - 2)
-                    elif total_num_pages == 4:
-                        page_number = 3
-                    elif total_num_pages == 2 or total_num_pages == 3:
-                        page_number = 2
-                    else:
-                        page_number = 1
+                    # # Select a random page but preferably not the first two pages (which could be a title
+                    # # and not the sheet music) and the last two pages (which could be a blank page)
+                    # page_number: int
+                    # if total_num_pages > 4:
+                    #     page_number = random.randint(3, total_num_pages - 2)
+                    # elif total_num_pages == 4:
+                    #     page_number = 3
+                    # elif total_num_pages == 2 or total_num_pages == 3:
+                    #     page_number = 2
+                    # else:
+                    #     page_number = 1
 
-                    generated: bool = generate_sheet_image(
-                        file_path, image_path, page_number
-                    )
+                    # generated: bool = generate_sheet_image(
+                    #     file_path, image_path, page_number
+                    # )
 
-                    # Remove the PDF file
-                    os.remove(file_path)
-                    if generated:
-                        if not model.is_sheet_music(image_path):
-                            hlog(
-                                f"Removing {image_path} as it was identified as not a sheet music."
-                            )
-                            os.remove(image_path)
-                            continue
+                    # # Remove the PDF file
+                    # # os.remove(file_path)
+                    # if generated:
+                    #     if not model.is_sheet_music(image_path):
+                    #         hlog(
+                    #             f"Removing {image_path} as it was identified as not a sheet music."
+                    #         )
+                    #         os.remove(image_path)
+                    #         continue
 
-                        generated_count += 1
-                        hlog(f"Generated {generated_count} of {num_examples} examples.")
-                        break
+                    #     generated_count += 1
+                    #     hlog(f"Generated {generated_count} of {num_examples} examples.")
+                    #     break
 
-                    # Add a delay to avoid subscription prompt
-                    hlog("Sleeping for 5 seconds...")
-                    time.sleep(5)
+                    # # Add a delay to avoid subscription prompt
+                    # hlog("Sleeping for 5 seconds...")
+                    # time.sleep(5)
 
                 if generated_count >= num_examples:
                     hlog(f"Generated {num_examples} examples. Exiting...")
