@@ -1,359 +1,172 @@
 from typing import Any, Dict, Optional, Tuple, List
+from PIL import Image, ImageOps
+from pdf2image.exceptions import PDFPageCountError
 
 import os
-import shutil
-import re
-import numpy as np
 import random
+import numpy as np
 
 from image2structure.compilation.compiler import (
     Compiler,
     CompilationError,
     CompilationResult,
 )
-from image2structure.compilation.tex.constants import (
-    TEX_DELIMITERS,
-    TEX_BEGIN,
-    TEX_END,
-)
 from image2structure.fetch.fetcher import ScrapeResult
-from image2structure.compilation.tex.compilation import (
-    latex_to_image,
-    strip_unnecessary_latex_parts,
-)
+from image2structure.util.image_utils import pdf_to_image
+from image2structure.compilation.musicsheet.classifier import SheetMusicClassifier
 
 
 class LillypondCompiler(Compiler):
 
-    CATEGORIES: List[str] = ["equation", "table", "figure", "algorithm", "plot"]
+    # The image should contain at least 50 % of white pixels
+    WHITE_THRESHOLD: float = 0.5
 
-    def __init__(
-        self,
-        crop: bool,
-        num_instances: int,
-        max_elt_per_category: int,
-        timeout: int,
-        verbose: bool = False,
-        categories: List[str] = CATEGORIES,
-    ):
+    # Small value to compare floats
+    EPSILON: float = 1e-6
+
+    # A row is considered emnpty if it contains at least SEGMENT_MIN_EMPTY_ROW_SIZE_RELATIVE_THRESHOLD
+    # lines of white pixels.
+    SEGMENT_MIN_EMPTY_ROW_SIZE_RELATIVE_THRESHOLD: float = 0.01
+
+    # A segment is considered to be a measure if it contains at least SEGMENT_MIN_ROW_SIZE_RELATIVE_THRESHOLD
+    # lines of non-empty pixels.
+    SEGMENT_MIN_ROW_SIZE_RELATIVE_THRESHOLD: float = 0.05
+
+    def __init__(self, crop_sides: bool, timeout: int, verbose: bool = False):
         super().__init__(timeout=timeout, verbose=verbose)
-        self._crop = crop
-        self._categories = categories
-
-        # Counter to save the assets
-        self._asset_number = 0
-
-        # Maximum number of category that we want to extract for one compilation
-        # i.e. we should not take 100 equations from the same paper
-        self._max_elt_per_category = max_elt_per_category
-        self._num_instances = num_instances
+        self._crop_sides = crop_sides
+        self._model = SheetMusicClassifier()
 
     @staticmethod
-    def get_asset_names_used(latex_code: str) -> List[str]:
-        """Extract the names of the assets used in the LaTeX code.
+    def get_page_number(total_num_pages: int) -> int:
+        """Select a random page but preferably not the first two pages (which could be a title
+        and not the sheet music) and the last two pages (which could be a blank page).
 
         Args:
-            latex_code: The LaTeX code.
+            total_num_pages: The total number of pages.
 
         Returns:
-            List[str]: The names of the assets used in the LaTeX code.
+            int: The selected page number.
         """
-        pattern = r"\\includegraphics(?:\[[^\]]+\])?\{([^}]+)\}"
-        asset_names = re.findall(pattern, latex_code)
-        return asset_names
+        page_number: int
+        if total_num_pages > 4:
+            page_number = random.randint(3, total_num_pages - 2)
+        elif total_num_pages == 4:
+            page_number = 3
+        elif total_num_pages == 2 or total_num_pages == 3:
+            page_number = 2
+        else:
+            page_number = 1
+        return page_number
 
-    def rename_and_save_assets(
-        self, latex_code: str, src_path: str, dest_path: str
-    ) -> str:
-        """Given a LaTeX code, rename and save the assets used in the code.
-        Returns the new LaTeX code with the renamed assets.
-
-        Args:
-            latex_code: The LaTeX code.
-            src_path: The path to the source directory.
-            dest_path: The path to the destination directory.
-
-        Returns:
-            str: The new LaTeX code with the renamed assets.
+    def generate_sheet_image(
+        self, pdf_path: str, page_number: int
+    ) -> Tuple[bool, Optional[Image.Image]]:
         """
-        asset_names: List[str] = LatexCompiler.get_asset_names_used(latex_code)
-        # Associates the new path to [tex_name, original_path]
-        asset_mapping: Dict[str, List[str]] = {}
+        Generates an image from the sheet music PDFs in `output_dir`
 
-        # Rename the assets by replacing / by _ and adding num_extracted _ at the beginning
-        for original_name in asset_names:
-            original_name_with_extension = original_name
-            if "." not in original_name_with_extension:
-                # Find a file starting with the original_name to determine the extension
-                file_name = original_name_with_extension.split("/")[-1]
-                asset_dest = os.path.join(
-                    src_path, "/".join(original_name_with_extension.split("/")[:-1])
-                )
-                for _, _, files in os.walk(asset_dest):
-                    for file in files:
-                        if file.startswith(file_name):
-                            extension = os.path.splitext(file)[1]
-                            original_name_with_extension += extension
-                            break
-            new_name = (
-                f'{self._asset_number}_{original_name_with_extension.replace("/", "_")}'
-            )
-            asset_mapping[new_name] = [original_name, original_name_with_extension]
-            self._asset_number += 1
-
-        # Replace the occurences in the tex_code
-        for new_name, [original_name, _] in asset_mapping.items():
-            latex_code = latex_code.replace(original_name, new_name)
-
-        # Move the assets
-        for new_name, [_, original_name_with_extension] in asset_mapping.items():
-            asset_path = os.path.join(src_path, original_name_with_extension)
-            new_asset_path = os.path.join(dest_path, new_name)
-            try:
-                shutil.copy(asset_path, new_asset_path)
-            except FileNotFoundError:
-                pass
-
-        return latex_code
-
-    @staticmethod
-    def read_latex_file(path: str) -> Tuple[Optional[str], bool]:
-        """Read the content of a LaTeX file.
-
-        Args:
-            path: The path to the LaTeX file.
-
-        Returns:
-            Optional[str]: The content of the LaTeX file.
-            bool: Whether the read was successful.
+        :param pdf_path: Path to the PDF file
+        :param output_path: Path to the output image
+        :param page_number: Page number to extract
+        :return: True if the image was generated successfully, False otherwise
         """
+        # Read PDF file in binary mode
+        image: Optional[Image.Image] = None
         try:
-            with open(path, "r") as f:
-                try:
-                    tex_code = f.read()
-                    return tex_code, True
-                except UnicodeDecodeError:
-                    return None, False
-        except FileNotFoundError:
-            return None, False
+            image = pdf_to_image(pdf_path, page_number=page_number)
 
-    def search_for_latex_files(self, src_dir: str, work_dir: str) -> List[str]:
-        """Search for LaTeX files in the given directory and its subdirectories.
+            if image is None:
+                if self._verbose:
+                    print(f"Could not generate image from {pdf_path}")
+                return False, image
+
+            if self._verbose:
+                print(
+                    f"Success: Extracted page {page_number} from {pdf_path} as an image."
+                )
+        except (RuntimeError, PDFPageCountError) as e:
+            if self._verbose:
+                print(f"Skipping: Error generating image from {pdf_path}: {e}")
+            return False, image
+
+        return True, image
+
+    def filter(self, image: Image.Image) -> None:
+        """
+        Filter the image to check if it is a sheet music.
 
         Args:
-            src_dir: The directory to search for LaTeX files.
-            work_dir: The directory to save the assets to.
+            image: The image to filter.
 
-        Returns:
-            List[str]: The list of LaTeX codes found in the directory.
+        Raises:
+            CompilationError: If the image does not contain enough white pixels or is not a sheet music.
         """
-        list_tex_code: List[str] = []
-        for root, _, files in os.walk(src_dir):
-            for file in files:
-                if file.endswith(".tex"):
-                    # Read the Latex file
-                    file_path: str = os.path.join(root, file)
-                    latex_code, read_successful = LatexCompiler.read_latex_file(
-                        file_path
-                    )
-                    if not read_successful:
-                        continue
-
-                    # Rename the assets
-                    assert latex_code is not None
-                    latex_code = self.rename_and_save_assets(
-                        latex_code=latex_code,
-                        src_path=src_dir,
-                        dest_path=work_dir,
-                    )
-                    list_tex_code.append(latex_code)
-
-        return list_tex_code
-
-    def get_delimited_content(self, src_code: str) -> Dict[str, List[str]]:
-        """Given a tex source code, return a dictionarry mapping categories (equation, plot, table, ...) to
-        all the instances of that category in the source codes.
-
-        Args:
-            src_code (str): tex source code.
-
-        Returns:
-            Dict[str, List[str]]: Dictionnary mapping a category to the list of delimited instances
-        """
-        delimited_content: Dict[str, List[str]] = {}
-
-        for category, (must_contain, delimiters) in TEX_DELIMITERS.items():
-            # Skip the category if it is not in the list of categories
-            # Or if we have already extracted enough instances
-            if (
-                category not in self._categories
-                or self._num_compiled_instances.get(category, 0) >= self._num_instances
-            ):
-                continue
-
-            delimited_content[category] = []
-            for delimiter in delimiters:
-                start, end = delimiter
-                lines = src_code.split("\n")  # Split the source code into lines
-                start_idx, end_idx = None, None
-                content = ""
-
-                for line in lines:
-                    stripped_line = line.strip()
-
-                    # Skip commented lines
-                    if stripped_line.startswith("%"):
-                        continue
-
-                    # Check for the start delimiter
-                    if start_idx is None:
-                        if start in stripped_line:
-                            start_idx = lines.index(line)
-                            content += line + "\n"
-                            continue
-
-                    # If we are in an environment, add the line to content
-                    if start_idx is not None:
-                        content += line + "\n"
-
-                    # Check for the end delimiter
-                    if end in stripped_line:
-                        end_idx = lines.index(line)
-                        if start_idx is not None and end_idx is not None:
-                            # We only add the content to the category if it contains the must_contain string
-                            cannot_contain: List[str] = [
-                                "\\ref{",
-                                "\\cite{",
-                                "\\eqref{",
-                            ]  # We do not want to include references
-                            if (
-                                must_contain is None
-                                or must_contain in content
-                                and all([c not in content for c in cannot_contain])
-                            ):
-                                delimited_content[category].append(content)
-                            start_idx, end_idx = None, None
-                            content = ""
-
-            # Remove duplicates
-            delimited_content[category] = list(set(delimited_content[category]))
-
-        return delimited_content
-
-    def get_and_save_rendering_from_delimited_content(
-        self,
-        delimited_content: Dict[str, List[str]],
-        assets_path: str,
-        dest_path: str,
-    ) -> Tuple[List[CompilationResult], Dict[str, Any]]:
-        """Given a dictionnary of delimited content, render all the images.
-        Save them directly.
-
-        Args:
-            delimited_content (Dict[str, List[str]]): Dictionnary mapping a category to the list of delimited instances
-            assets_path (str): Path to the assets
-            dest_path (str): Path to the destination folder
-
-        Returns:
-            List[CompilationResult]: The result of the compilation.
-            Dict[str, int]: Dictionnary mapping a category to the number of images rendered
-        """
-
-        compilations: List[CompilationResult] = []
-        num_done: Dict[str, int] = {}
-
-        for category, list_of_content in delimited_content.items():
-            num_images: int = 0
-            num_max_image = self._num_instances - self._num_compiled_instances.get(
-                category, 0
+        # Count proportion of white pixels.
+        image_np = np.array(image)
+        white_pixels = np.sum(image_np == 255)
+        proportion_white = white_pixels / image_np.size
+        if proportion_white < self.WHITE_THRESHOLD:
+            raise CompilationError(
+                f"Image does not contain enough white pixels: {proportion_white}"
             )
-            num_max_image = min(num_max_image, self._max_elt_per_category)
 
-            if num_max_image <= 0:
-                continue
+        # Classify the image
+        if not self._model.is_sheet_music(image):
+            raise CompilationError("Image is not a sheet music.")
 
-            os.makedirs(f"{dest_path}/images/{category}", exist_ok=True)
-            os.makedirs(f"{dest_path}/structures/{category}", exist_ok=True)
-            os.makedirs(f"{dest_path}/assets", exist_ok=True)
+    def segment(self, image: np.ndarray) -> List[Tuple[int, int]]:
+        """
+        Segment the image into measures.
 
-            for tex_code in list_of_content:
-                try:
-                    # Render the image
-                    image, infos = latex_to_image(
-                        TEX_BEGIN + tex_code + TEX_END,
-                        assets_path=assets_path,
-                        crop=True,
-                    )
+        Args:
+            image: The image to segment.
 
-                    # Check if the image is not fully white
-                    if image is None or np.allclose(image, 255):
-                        if self._verbose:
-                            print("Image is fully white, skipping...")
-                        continue
+        Returns:
+            List[Tuple[int, int]]: The list of segments.
+        """
+        assert len(image.shape) == 2
+        image = image.astype(np.float32) / 255.0
+        inversed_sum = 1.0 - np.mean(image, axis=1)
 
-                    # Save the associated assets
-                    asset_paths: List[str] = []
-                    asset_names = LatexCompiler.get_asset_names_used(tex_code)
-                    all_assets_saved: bool = True
-                    for asset_name in asset_names:
-                        asset_path = os.path.join(assets_path, asset_name)
-                        new_asset_path = os.path.join(
-                            f"{dest_path}/assets", asset_name.replace("/", "_")
-                        )
-                        try:
-                            shutil.copy(asset_path, new_asset_path)
-                            asset_paths.append(new_asset_path)
-                        except FileNotFoundError:
-                            # Could not copy one of the assets so ignore this tex_code
-                            all_assets_saved = False
-                    if not all_assets_saved:
-                        if self._verbose:
-                            print("Could not save all assets, skipping...")
-                        continue
+        # Constants
+        min_num_empty_rows = int(
+            self.SEGMENT_MIN_EMPTY_ROW_SIZE_RELATIVE_THRESHOLD * image.shape[0]
+        )
+        min_num_rows = int(
+            self.SEGMENT_MIN_ROW_SIZE_RELATIVE_THRESHOLD * image.shape[0]
+        )
 
-                    # Save the image
-                    image_path: str = f"{dest_path}/images/{category}/{num_images}.png"
-                    image.save(image_path)
+        # Segment inversed_sum in sections separated by at least
+        # min_num_empty_rows empty rows (i.e. zeros in inversed_sum).
+        # Example: [0, 0, 0, index_0_0, ...., index_0_1, 0, 0, 0, 0, index_1_0, ...., index_1_1, 0, 0, 0, ...]
+        # with min_num_empty_rows = 3
+        # The segments are [(index_0_0, index_0_1), (index_1_0, index_1_1)]
+        segments = []
+        count_empty_rows: int = 0
+        start: Optional[int] = None
+        for i in range(1, len(inversed_sum)):
+            if start is not None:
+                # We are currently in a segment
+                if inversed_sum[i] < self.EPSILON:
+                    # The current row is empty
+                    # Only add the segment if it contains at least min_num_rows
+                    if i - start >= min_num_rows:
+                        segments.append((start, i))
+                    start = None
+            else:
+                # We are currently not in a segment
+                if inversed_sum[i] < self.EPSILON:
+                    # The current row is empty
+                    count_empty_rows += 1
+                else:
+                    # The current row is not empty and the previous ones were
+                    if count_empty_rows >= min_num_empty_rows:
+                        start = i
+                    count_empty_rows = 0
+        if start is not None and len(inversed_sum) - start >= min_num_rows:
+            segments.append((start, len(inversed_sum)))
 
-                    # Save the associated code
-                    code_path: str = (
-                        f"{dest_path}/structures/{category}/{num_images}.tex"
-                    )
-                    with open(
-                        code_path,
-                        "w",
-                    ) as f:
-                        f.write(tex_code)
-
-                    # Save the compilation
-                    assert "latex_code" in infos
-                    text: str = strip_unnecessary_latex_parts(infos["latex_code"])
-                    compilations.append(
-                        CompilationResult(
-                            data_path=code_path,
-                            rendering_path=image_path,
-                            assets_path=asset_paths,
-                            text=text,
-                            category=category,
-                        )
-                    )
-
-                    # Once we have enough images, stop rendering
-                    if self._verbose:
-                        print(f"Compiled {num_images} instances for {category}.")
-                    num_images += 1
-                    if num_images >= num_max_image:
-                        break
-
-                # There was an error rendering or saving the code, go to the next code
-                except Exception as e:
-                    if self._verbose:
-                        print(f"Failed to render the code: {e}")
-                    continue
-
-            num_done[category] = num_images
-
-        return compilations, {"num_done": num_done}
+        return segments
 
     def compile(
         self,
@@ -376,46 +189,58 @@ class LillypondCompiler(Compiler):
         Raises:
             CompilationError: If the compilation fails.
         """
+        assert scrape_result is not None
+
+        # This compile method is a bit hacky as it performs some sort of filtering
+        # during compilation. This is not ideal and should be done before and after
+        # with some file filters or compilation filters.
 
         infos: Dict[str, Any] = {}
+        pdf_filename: str = os.path.join(data_path, scrape_result.instance_name)
+        pdf_filename = pdf_filename + ".pdf"
+        if not os.path.exists(pdf_filename):
+            raise CompilationError(f"The file {pdf_filename} does not exist.")
 
-        # 0. Create the directories
-        work_dir: str = os.path.join(destination_path, "tmp/work")
-        os.makedirs(work_dir, exist_ok=True)
+        assert "page_count" in scrape_result.additional_info
+        total_num_pages = scrape_result.additional_info["page_count"]
+        page_number = self.get_page_number(total_num_pages)
+        infos["page_number"] = page_number
 
-        # 1. Check that the data path is a directory
-        if not os.path.isdir(data_path):
-            raise CompilationError(f"The data path {data_path} is not a directory.")
+        # Generate the image
+        success, image = self.generate_sheet_image(pdf_filename, page_number)
+        if not success:
+            raise CompilationError(f"Could not generate image from {pdf_filename}")
+        assert image is not None
 
-        # 2. Search for the LaTeX files
-        list_tex_code: List[str] = self.search_for_latex_files(data_path, work_dir)
+        # Filter the image
+        self.filter(image)
 
-        # 3. Delimit the content
-        categories: List[str] = [
-            category
-            for category in self._categories
-            if self._num_compiled_instances.get(category, 0) < self._num_instances
-        ]
-        delimited_content: Dict[str, List[str]] = {
-            category: [] for category in categories
-        }
-        for src_code in list_tex_code:
-            tmp_delimited_content = self.get_delimited_content(src_code)
-            for category in delimited_content.keys():
-                delimited_content[category] += tmp_delimited_content[category]
+        # Crop the image to keep only the title and the first measure
+        segments = self.segment(np.mean(np.array(image), axis=2))
+        if page_number == 1:
+            segments = segments[1:]  # Remove the title
 
-        # 4. Shuffle the content
-        for category in delimited_content.keys():
-            random.shuffle(delimited_content[category])
+        compilation_results: List[CompilationResult] = []
+        for i, (start, end) in enumerate(segments):
+            # Crop the segment
+            cropped_image = image.crop((0, start, image.width, end))
 
-        # 5. Render and save some code
-        (
-            compilation_results,
-            infos,
-        ) = self.get_and_save_rendering_from_delimited_content(
-            delimited_content=delimited_content,
-            assets_path=work_dir,
-            dest_path=destination_path,
-        )
+            # Remove left and right empty space
+            if self._crop_sides:
+                cropped_image = cropped_image.crop(
+                    ImageOps.invert(cropped_image).getbbox()
+                )
+
+            # Save the cropped image
+            image_filename = os.path.join(
+                destination_path, f"{scrape_result.instance_name}_{i}.png"
+            )
+            cropped_image.save(image_filename)
+            compilation_result = CompilationResult(
+                data_path=data_path,
+                rendering_path=image_filename,
+                category="music",
+            )
+            compilation_results.append(compilation_result)
 
         return compilation_results, infos

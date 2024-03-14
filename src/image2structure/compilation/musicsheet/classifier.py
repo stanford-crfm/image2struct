@@ -1,4 +1,3 @@
-from mwclient.image import Image
 from PIL import Image
 from torchvision import transforms, models
 import torch
@@ -13,7 +12,7 @@ class SheetMusicClassifier:
         self._device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         # Assume you have a model defined (or modified) as `model`
-        model = models.resnet18(pretrained=False)  # Example: ResNet-18
+        model = models.resnet18(weights=None)  # Example: ResNet-18
         num_ftrs = model.fc.in_features
         model.fc = torch.nn.Linear(num_ftrs, 2)  # Adjusting for binary classification
 
@@ -35,11 +34,8 @@ class SheetMusicClassifier:
             ]
         )
 
-    def is_sheet_music(self, image_path: str) -> bool:
+    def is_sheet_music(self, image: Image.Image) -> bool:
         with torch.no_grad():
-            # Open the image file
-            image = Image.open(image_path)
-
             # Convert the image to RGB if it's not already (important for RGBA or grayscale images)
             if image.mode != "RGB":
                 image = image.convert("RGB")
