@@ -9,6 +9,7 @@ import os
 import shutil
 import tarfile
 import time
+import uuid
 
 from .runner import Runner
 from .run_specs import _RUNNER_REGISTRY
@@ -271,7 +272,7 @@ def run(runner: Runner, args: argparse.Namespace) -> None:
             done: bool = False
             for compilation_result in accepted_results:
                 category: str = compilation_result.category
-                num_id: int = 0
+                file_name: str = str(uuid.uuid4())
                 if category not in num_instances_collected:
                     # First time we collect this category
                     # Create the directories
@@ -280,30 +281,25 @@ def run(runner: Runner, args: argparse.Namespace) -> None:
                             os.path.join(output_path, category, dir), exist_ok=True
                         )
                     num_instances_collected[category] = 0
-                else:
-                    # Increment the number of instances collected
-                    num_id = num_files_in_dir(
-                        os.path.join(output_path, category, "metadata")
-                    )
 
                 # Copy shared metadata to compiled metadata
                 compiled_metadata: Dict[str, Any] = {
                     **remove_unparsable_object_from_dict(metadata),
                     "assets": compilation_result.assets_path,
                     "category": category,
-                    "num_id": num_id,
+                    "uuid": file_name,
                 }
 
                 # Save the metadata
                 instance_metadata_path: str = os.path.join(
-                    output_path, category, "metadata", f"{num_id}.json"
+                    output_path, category, "metadata", f"{file_name}.json"
                 )
                 with open(instance_metadata_path, "w") as f:
                     json.dump(compiled_metadata, f, indent=4)
 
                 # Save the image
                 instance_image_path: str = os.path.join(
-                    output_path, category, "images", f"{num_id}.png"
+                    output_path, category, "images", f"{file_name}.png"
                 )
                 shutil.copy(compilation_result.rendering_path, instance_image_path)
 
@@ -319,7 +315,7 @@ def run(runner: Runner, args: argparse.Namespace) -> None:
                 # Save the text
                 if compilation_result.text is not None:
                     instance_text_path: str = os.path.join(
-                        output_path, category, "text", f"{num_id}.txt"
+                        output_path, category, "text", f"{file_name}.txt"
                     )
                     with open(instance_text_path, "w") as f:
                         f.write(compilation_result.text)
@@ -332,7 +328,7 @@ def run(runner: Runner, args: argparse.Namespace) -> None:
                         else ""
                     )
                     instance_structure_path: str = os.path.join(
-                        output_path, category, "structures", f"{num_id}{extension}"
+                        output_path, category, "structures", f"{file_name}{extension}"
                     )
                     if os.path.isdir(compilation_result.data_path):
                         # First delete all files that we do not want to include
@@ -361,7 +357,7 @@ def run(runner: Runner, args: argparse.Namespace) -> None:
                 assert category in num_instances_collected
                 num_instances_collected[category] += 1
                 runner.compiler.acknowledge_compilation(category)
-                print(f"Instance number {num_id} of category {category} collected")
+                print(f"Instance {file_name} of category {category} collected")
 
                 done = True
                 for category in num_instances_collected.keys():

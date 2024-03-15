@@ -115,21 +115,25 @@ def main():
         # Figure out the extension of the structure files
         extension: str = ""
         if has_structure:
-            file_name: str = os.listdir(structure_path)[0]
-            extension = os.path.splitext(file_name)[-1]
-            if file_name.endswith(".tar.gz"):
+            first_file_name: str = os.listdir(structure_path)[0]
+            extension = os.path.splitext(first_file_name)[-1]
+            if first_file_name.endswith(".tar.gz"):
                 extension = ".tar.gz"
 
         # Load the structure
         df: pd.DataFrame = pd.DataFrame()
         structure_set = set()
+        file_names: List[str] = os.listdir(structure_path)
         image_set = set()
         for i in tqdm(range(num_data_points), desc="Loading data"):
             try:
                 values = {}
+                file_name: str = file_names[i].replace(extension, "")
 
                 if has_structure:
-                    structure_file = os.path.join(structure_path, f"{i}{extension}")
+                    structure_file = os.path.join(
+                        structure_path, f"{file_name}{extension}"
+                    )
                     structure: str
                     if extension == ".tar.gz" or extension == ".zip":
                         structure = load_archive(structure_file)
@@ -141,23 +145,25 @@ def main():
                     structure_set.add(structure)
 
                 if has_text:
-                    text: str = load_file(os.path.join(text_path, f"{i}.txt"))
+                    text: str = load_file(os.path.join(text_path, f"{file_name}.txt"))
                     values["text"] = [text]
 
-                image = os.path.join(image_path, f"{i}.png")
+                image = os.path.join(image_path, f"{file_name}.png")
                 hashed_img: str = str(imagehash.average_hash(load_image(image)))
                 if hashed_img in image_set:
                     continue
                 image_set.add(hashed_img)
                 values["image"] = [image]
 
-                metadata = os.path.join(metadata_path, f"{i}.json")
+                metadata = os.path.join(metadata_path, f"{file_name}.json")
                 values["metadata"] = [metadata]
 
                 df = pd.concat([df, pd.DataFrame(values)])
 
             except FileNotFoundError as e:
-                print(f"Skipping {i} as it is missing one of the required files: {e}")
+                print(
+                    f"Skipping {file_name} as it is missing one of the required files: {e}"
+                )
                 continue
 
         # Remove duplicates
