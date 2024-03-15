@@ -11,6 +11,7 @@ from PIL import Image
 import base64
 import pandas as pd
 import json
+import imagehash
 
 
 def load_image(image_path: str) -> Image.Image:
@@ -95,9 +96,11 @@ def main():
         metadata_path = os.path.join(data_path, "metadata")
         assets_path = os.path.join(data_path, "assets")
         text_path = os.path.join(data_path, "text")
-        for path in [image_path, structure_path, metadata_path, assets_path, text_path]:
+        for path in [image_path, metadata_path, assets_path]:
             if not os.path.exists(path):
                 raise FileNotFoundError(f"{path} does not exist")
+        has_structure: bool = os.path.exists(structure_path)
+        has_text: bool = os.path.exists(text_path)
 
         num_data_points: int = len(os.listdir(image_path))
 
@@ -110,41 +113,49 @@ def main():
         #   list of encoded strings and stored in the column "assets"
 
         # Figure out the extension of the structure files
-        file_name: str = os.listdir(structure_path)[0]
-        extension: str = os.path.splitext(file_name)[-1]
-        if file_name.endswith(".tar.gz"):
-            extension = ".tar.gz"
+        extension: str = ""
+        if has_structure:
+            file_name: str = os.listdir(structure_path)[0]
+            extension = os.path.splitext(file_name)[-1]
+            if file_name.endswith(".tar.gz"):
+                extension = ".tar.gz"
 
         # Load the structure
         df: pd.DataFrame = pd.DataFrame()
         structure_set = set()
+        image_set = set()
         for i in tqdm(range(num_data_points), desc="Loading data"):
             try:
-                structure_file = os.path.join(structure_path, f"{i}{extension}")
-                structure: str
-                if extension == ".tar.gz" or extension == ".zip":
-                    structure = load_archive(structure_file)
-                else:
-                    structure = load_file(structure_file)
-                if structure in structure_set:
-                    continue
-                structure_set.add(structure)
-                text: str = load_file(os.path.join(text_path, f"{i}.txt"))
+                values = {}
+
+                if has_structure:
+                    structure_file = os.path.join(structure_path, f"{i}{extension}")
+                    structure: str
+                    if extension == ".tar.gz" or extension == ".zip":
+                        structure = load_archive(structure_file)
+                    else:
+                        structure = load_file(structure_file)
+                    if structure in structure_set:
+                        continue
+                    values["structure"] = [structure]
+                    structure_set.add(structure)
+
+                if has_text:
+                    text: str = load_file(os.path.join(text_path, f"{i}.txt"))
+                    values["text"] = [text]
+
                 image = os.path.join(image_path, f"{i}.png")
+                hashed_img: str = str(imagehash.average_hash(load_image(image)))
+                if hashed_img in image_set:
+                    continue
+                image_set.add(hashed_img)
+                values["image"] = [image]
+
                 metadata = os.path.join(metadata_path, f"{i}.json")
-                df = pd.concat(
-                    [
-                        df,
-                        pd.DataFrame(
-                            {
-                                "structure": [structure],
-                                "image": [image],
-                                "metadata": [metadata],
-                                "text": [text],
-                            }
-                        ),
-                    ]
-                )
+                values["metadata"] = [metadata]
+
+                df = pd.concat([df, pd.DataFrame(values)])
+
             except FileNotFoundError as e:
                 print(f"Skipping {i} as it is missing one of the required files: {e}")
                 continue
