@@ -62,3 +62,24 @@ class TestRun:
         )
         runner: Runner = get_runner_from_args(args)
         run(runner, args)
+
+    def test_musicsheet(self):
+        args = get_args_parser()[0].parse_args(
+            [
+                "--destination-path",
+                self.data_path,
+                "--num-instances",
+                "1",
+                "--num-instances-at-once",
+                "5",
+                "--date-from",
+                "2010-01-01",
+                "--date-to",
+                "2022-02-01",
+                "musicsheet",
+                "--subcategory",
+                "music",
+            ]
+        )
+        runner: Runner = get_runner_from_args(args)
+        run(runner, args)

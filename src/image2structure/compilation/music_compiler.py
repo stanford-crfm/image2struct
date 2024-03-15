@@ -196,8 +196,7 @@ class MusicCompiler(Compiler):
         # with some file filters or compilation filters.
 
         infos: Dict[str, Any] = {}
-        pdf_filename: str = os.path.join(data_path, scrape_result.instance_name)
-        pdf_filename = pdf_filename + ".pdf"
+        pdf_filename: str = data_path
         if not os.path.exists(pdf_filename):
             raise CompilationError(f"The file {pdf_filename} does not exist.")
 
@@ -237,7 +236,7 @@ class MusicCompiler(Compiler):
             )
             cropped_image.save(image_filename)
             compilation_result = CompilationResult(
-                data_path=data_path,
+                data_path=None,
                 rendering_path=image_filename,
                 category="music",
             )

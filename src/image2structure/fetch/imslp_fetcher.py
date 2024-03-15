@@ -202,8 +202,8 @@ class ImslpFetcher(Fetcher):
                             instance_name=file_name,
                             date=date,
                             additional_info={
-                                "total_num_pages": total_num_pages,
                                 "metadata": metadata,
+                                "page_count": total_num_pages,
                             },
                         )
                     )

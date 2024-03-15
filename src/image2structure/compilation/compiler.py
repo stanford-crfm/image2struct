@@ -9,9 +9,6 @@ from image2structure.fetch.fetcher import ScrapeResult
 class CompilationResult:
     """The result of a compilation."""
 
-    data_path: str
-    """The path to the compiled data."""
-
     rendering_path: str
     """The path to the rendering of the compiled data."""
 
@@ -19,6 +16,9 @@ class CompilationResult:
     """The category of the compiled data.
     For TeX, this is the type of the environment (e.g. equation, figure, table, algorithm).
     For web pages, this can be the language used (HTML, CSS, JavaScript, etc.)."""
+
+    data_path: Optional[str] = None
+    """The path to the compiled data."""
 
     text: Optional[str] = None
     """The text extracted from the compiled data."""

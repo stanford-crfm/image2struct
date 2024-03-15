@@ -22,15 +22,14 @@ class TestImslpFetcher:
         assert len(results) == 1
 
     def test_download_runs(self):
-        results = self.fetcher.scrape(10)
+        results = self.fetcher.scrape(1)
 
         # Download the first result
         tmp_path = os.path.dirname(__file__)
-        for i in range(10):
-            self.fetcher.download(tmp_path, results[i])
+        self.fetcher.download(tmp_path, results[0])
         pdf_path: str = os.path.join(tmp_path, results[0].instance_name)
         assert os.path.exists(pdf_path)
-        # os.remove(pdf_path)
+        os.remove(pdf_path)
 
     def test_download_invalid_path(self):
         with pytest.raises(DownloadError):

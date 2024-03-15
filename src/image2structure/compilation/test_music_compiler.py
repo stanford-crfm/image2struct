@@ -27,12 +27,13 @@ class TestMusicCompiler:
     def test_compile_valid_musicsheet(self):
         scrape_result = ScrapeResult(
             download_url="empty",
-            instance_name="test_0",
+            instance_name="test_0.pdf",
             date=datetime.datetime.now(),
             additional_info={"page_count": 2},
         )
+        data_path: str = os.path.join(self.data_path, scrape_result.instance_name)
         compilation_results, _ = self.compiler.compile(
-            self.data_path, self.dest_path, scrape_result
+            data_path, self.dest_path, scrape_result
         )
         assert len(compilation_results) == 8
         for compilation_result in compilation_results:
@@ -44,19 +45,21 @@ class TestMusicCompiler:
     def test_compile_invalid_musicsheet(self):
         scrape_result = ScrapeResult(
             download_url="empty",
-            instance_name="test_1",
+            instance_name="test_1.pdf",
             date=datetime.datetime.now(),
             additional_info={"page_count": 2},
         )
         with pytest.raises(CompilationError):
-            self.compiler.compile(self.data_path, self.dest_path, scrape_result)
+            data_path: str = os.path.join(self.data_path, scrape_result.instance_name)
+            self.compiler.compile(data_path, self.dest_path, scrape_result)
 
     def test_compile_non_existing_musicsheet(self):
         scrape_result = ScrapeResult(
             download_url="empty",
-            instance_name="non_existing",
+            instance_name="non_existing.pdf",
             date=datetime.datetime.now(),
             additional_info={"page_count": 2},
         )
         with pytest.raises(CompilationError):
-            self.compiler.compile(self.data_path, self.dest_path, scrape_result)
+            data_path: str = os.path.join(self.data_path, scrape_result.instance_name)
+            self.compiler.compile(data_path, self.dest_path, scrape_result)
