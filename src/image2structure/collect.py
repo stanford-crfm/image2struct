@@ -19,6 +19,18 @@ from image2structure.compilation.compiler import CompilationError, CompilationRe
 from image2structure.fetch.fetcher import DownloadError
 
 
+def remove_unparsable_object_from_dict(d: Dict[str, Any]) -> Dict[str, Any]:
+    for key in list(d.keys()):
+        if isinstance(d[key], dict):
+            d[key] = remove_unparsable_object_from_dict(d[key])
+        # If it's not JSON parsable, remove it
+        try:
+            json.dumps(d[key])
+        except TypeError:
+            del d[key]
+    return d
+
+
 def get_args_parser() -> (
     Tuple[argparse.ArgumentParser, Dict[str, argparse.ArgumentParser]]
 ):
@@ -128,9 +140,9 @@ def run(runner: Runner, args: argparse.Namespace) -> None:
         for scrape_result in scrape_results:
             # Create clean temporaty working directory
             if os.path.exists(tmp_dir):
-                shutil.rmtree(tmp_dir)
+                pass  # raise ValueError("strop")  # shutil.rmtree(tmp_dir)
             for path in [tmp_dir, tmp_structure_path, tmp_image_path]:
-                os.makedirs(path, exist_ok=False)
+                os.makedirs(path, exist_ok=True)
 
             # Flag to continue to the next instance
             should_continue: bool = False
@@ -272,7 +284,7 @@ def run(runner: Runner, args: argparse.Namespace) -> None:
 
                 # Copy shared metadata to compiled metadata
                 compiled_metadata: Dict[str, Any] = {
-                    **metadata,
+                    **remove_unparsable_object_from_dict(metadata),
                     "assets": compilation_result.assets_path,
                     "category": category,
                     "uuid": file_name,
@@ -301,41 +313,45 @@ def run(runner: Runner, args: argparse.Namespace) -> None:
                     shutil.copy(asset_path, instance_asset_path)
 
                 # Save the text
-                instance_text_path: str = os.path.join(
-                    output_path, category, "text", f"{file_name}.txt"
-                )
-                with open(instance_text_path, "w") as f:
-                    f.write(compilation_result.text)
+                if compilation_result.text is not None:
+                    instance_text_path: str = os.path.join(
+                        output_path, category, "text", f"{file_name}.txt"
+                    )
+                    with open(instance_text_path, "w") as f:
+                        f.write(compilation_result.text)
 
                 # Save the structure
-                extension: str = (
-                    os.path.splitext(compilation_result.data_path)[-1]
-                    if "." in compilation_result.data_path
-                    else ""
-                )
-                instance_structure_path: str = os.path.join(
-                    output_path, category, "structures", f"{file_name}{extension}"
-                )
-                if os.path.isdir(compilation_result.data_path):
-                    # First delete all files that we do not want to include
-                    # in the tar.gz. This is to avoid including the .git
-                    # directory and other files that are not necessary such
-                    # as the _site directory. We filter these files
-                    # by removing the folder that starts with an underscore
-                    # or a dot.
-                    for root, dirs, files in os.walk(compilation_result.data_path):
-                        for dir in dirs:
-                            if dir.startswith(("_site", ".")):
-                                shutil.rmtree(os.path.join(root, dir))
-
-                    # Compress the directory in .tar.gz to the instance_structure_path
-                    shutil.make_archive(
-                        instance_structure_path,
-                        "gztar",
-                        compilation_result.data_path,
+                if compilation_result.data_path is not None:
+                    extension: str = (
+                        os.path.splitext(compilation_result.data_path)[-1]
+                        if "." in compilation_result.data_path
+                        else ""
                     )
-                else:
-                    shutil.copy(compilation_result.data_path, instance_structure_path)
+                    instance_structure_path: str = os.path.join(
+                        output_path, category, "structures", f"{file_name}{extension}"
+                    )
+                    if os.path.isdir(compilation_result.data_path):
+                        # First delete all files that we do not want to include
+                        # in the tar.gz. This is to avoid including the .git
+                        # directory and other files that are not necessary such
+                        # as the _site directory. We filter these files
+                        # by removing the folder that starts with an underscore
+                        # or a dot.
+                        for root, dirs, files in os.walk(compilation_result.data_path):
+                            for dir in dirs:
+                                if dir.startswith(("_site", ".")):
+                                    shutil.rmtree(os.path.join(root, dir))
+
+                        # Compress the directory in .tar.gz to the instance_structure_path
+                        shutil.make_archive(
+                            instance_structure_path,
+                            "gztar",
+                            compilation_result.data_path,
+                        )
+                    else:
+                        shutil.copy(
+                            compilation_result.data_path, instance_structure_path
+                        )
 
                 # Increment the number of instances collected
                 assert category in num_instances_collected
@@ -352,6 +368,13 @@ def run(runner: Runner, args: argparse.Namespace) -> None:
                     break
             if done:
                 break
+
+    # Check if there are elements in the text/structures folder, otherwise remove it
+    for category in num_instances_collected.keys():
+        for dir in ["text", "structures"]:
+            path = os.path.join(output_path, category, dir)
+            if not os.listdir(path):
+                os.rmdir(path)
 
     print("Scraping complete!")
     print(f" - {num_instances_downloaded} instances downloaded")

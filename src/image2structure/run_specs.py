@@ -188,3 +188,64 @@ def get_latex_runner(
         compiler=compiler,
         rendering_filters=rendering_filters,
     )
+
+
+@register_runner(
+    "musicsheet",
+    args_info={"subcategory": str},
+)
+def get_musicsheet_runner(
+    date_created_after: datetime.datetime,
+    date_created_before: datetime.datetime,
+    timeout: int,
+    num_instances: int,
+    subcategory: str,
+    max_instances_per_date: int,
+    verbose: bool,
+) -> Runner:
+    """Get a runner for webpage data."""
+    from image2structure.compilation.music_compiler import MusicCompiler
+    from image2structure.fetch.imslp_fetcher import ImslpFetcher
+    from image2structure.filter.rendering_filters.non_trivial_rendering_filter import (
+        NonTrivialRenderingFilter,
+    )
+    from image2structure.filter.fetch_filters.fetch_filter import FetchFilter
+    from image2structure.filter.file_filters.file_filter import FileFilter
+
+    fetcher = ImslpFetcher(
+        date_created_after=date_created_after,
+        date_created_before=date_created_before,
+        timeout=timeout,
+        verbose=verbose,
+    )
+
+    fetch_filters: List[FetchFilter] = [
+        AfterDateFetchFilter(date_created_after),
+        DateFetchFilter(max_instances_per_date=max_instances_per_date),
+    ]
+    file_filters: List[FileFilter] = []
+
+    compiler = MusicCompiler(
+        crop_sides=True,
+        timeout=timeout,
+        verbose=verbose,
+    )
+
+    rendering_filters = [
+        NonTrivialRenderingFilter(
+            hashfunc=imagehash.average_hash,
+            hash_size_white_imgs=8,
+            hash_size_other_imgs=5,
+            max_background_percentage=99.0,
+            threshold_white_percentage=50.0,
+            verbose=False,
+        )
+    ]
+
+    return Runner(
+        fetcher=fetcher,
+        fetch_filters=fetch_filters,
+        file_filters=file_filters,
+        compiler=compiler,
+        rendering_filters=rendering_filters,
+    )
