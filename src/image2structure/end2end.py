@@ -98,6 +98,13 @@ def main():
                 f"{command_base} --tmp-path {args.destination_path}/tmp/{args.type}/{category} {latex_suffix}"
                 f" >> {args.destination_path}/logs/{args.type}/{category}.log"
             )
+    elif args.type == "musicsheet":
+        for i, category in enumerate(["music"]):
+            music_suffix: str = f"musicsheet --subcategory {category}"
+            collect_commands.append(
+                f"{command_base} --tmp-path {args.destination_path}/tmp/{args.type}/{category} {music_suffix}"
+                f" >> {args.destination_path}/logs/{args.type}/{category}.log"
+            )
     else:
         raise ValueError(f"Invalid type: {args.type}")
     os.makedirs(f"{args.destination_path}/logs/{args.type}", exist_ok=True)
