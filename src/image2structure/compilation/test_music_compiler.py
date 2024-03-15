@@ -39,7 +39,7 @@ class TestMusicCompiler:
         for compilation_result in compilation_results:
             assert compilation_result.text is None
             assert os.path.exists(compilation_result.rendering_path)
-            assert os.path.exists(compilation_result.data_path)
+            assert compilation_result.data_path is None
             assert compilation_result.assets_path == []
 
     def test_compile_invalid_musicsheet(self):
