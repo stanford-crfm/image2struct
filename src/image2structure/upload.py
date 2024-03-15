@@ -9,6 +9,7 @@ import io
 from PIL import Image
 import base64
 import pandas as pd
+import numpy as np
 import json
 import imagehash
 
@@ -55,6 +56,58 @@ def transform(row: dict) -> dict:
     return row
 
 
+def classify_difficulty(dataset, data_type: str):
+    """
+    Classify the difficulty of the instances in the dataset.
+        - 1/3 of the instances are easy
+        - 1/3 of the instances are medium
+        - 1/3 of the instances are hard
+
+    Args:
+        dataset: The dataset to classify, expected to be an iterable of dictionaries.
+        data_type: The type of data to classify (e.g., webpage, latex).
+
+    Returns:
+        The dataset with the difficulty classified.
+    """
+    if data_type == "latex":
+        lengths = [len(item["text"]) for item in dataset]
+    elif data_type == "musicsheet":
+        lengths = []
+        for item in tqdm(dataset, desc="Computing difficulty"):
+            with Image.open(io.BytesIO(item["image"]["bytes"])) as img:
+                img_array = np.array(img)
+                # Assuming the image is grayscale; update this if it's not
+                black_pixels = np.sum(img_array < np.max(img_array) / 4.0)
+                lengths.append(black_pixels)
+    elif data_type == "webpage":
+        lengths = [
+            int(json.loads(item["file_filters"])["RepoFilter"]["num_lines"]["code"])
+            + int(json.loads(item["file_filters"])["RepoFilter"]["num_lines"]["style"])
+            for item in dataset
+        ]
+    else:
+        raise ValueError(f"Unknown data type: {data_type}")
+
+    # Sort lengths and find thresholds
+    lengths_sorted = sorted(lengths)
+    easy_threshold = lengths_sorted[len(lengths) // 3]
+    medium_threshold = lengths_sorted[(len(lengths) // 3) * 2]
+
+    # Assign difficulty based on thresholds
+    # Add "difficulty" to the columns of the dataset
+    df = pd.DataFrame(dataset)
+    df["length"] = lengths
+    df["difficulty"] = "easy"
+    df.loc[
+        (df["difficulty"] == "easy") & (df["length"] > easy_threshold), "difficulty"
+    ] = "medium"
+    df.loc[
+        (df["difficulty"] == "medium") & (df["length"] > medium_threshold), "difficulty"
+    ] = "hard"
+    return Dataset.from_pandas(df)
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Upload collected data to huggingface")
     parser.add_argument(
@@ -81,6 +134,8 @@ def parse_args() -> argparse.Namespace:
 def main():
     args = parse_args()
 
+    data_type: str = os.path.basename(args.data_path)
+    print(f"\nUploading {data_type} dataset...")
     for category in os.listdir(args.data_path):
         print(f"\nUploading {category} dataset...")
         data_path: str = os.path.join(args.data_path, category)
@@ -122,12 +177,12 @@ def main():
         # Load the structure
         df: pd.DataFrame = pd.DataFrame()
         structure_set = set()
-        file_names: List[str] = os.listdir(structure_path)
+        file_names: List[str] = os.listdir(image_path)
         image_set = set()
         for i in tqdm(range(num_data_points), desc="Loading data"):
             try:
                 values = {}
-                file_name: str = file_names[i].replace(extension, "")
+                file_name: str = file_names[i].replace(".png", "")
 
                 if has_structure:
                     structure_file = os.path.join(
@@ -166,8 +221,11 @@ def main():
                 continue
 
         # Remove duplicates
-        # Only check the structure
-        df = df.drop_duplicates(subset=["structure"])
+        # Only check the structure if present, otherwise check the image (path)
+        if has_structure:
+            df = df.drop_duplicates(subset=["structure"])
+        else:
+            df = df.drop_duplicates(subset=["image"])
 
         # Limit the number of instances
         if args.max_instances > 0:
@@ -178,6 +236,11 @@ def main():
             df = df.head(args.max_instances)
 
         valid_dataset = Dataset.from_pandas(df).map(transform).shuffle()
+
+        # Classify the difficulty of the instances
+        valid_dataset = classify_difficulty(valid_dataset, data_type)
+        # valid_dataset = Dataset.from_pandas(df)
+        # Print first 5 instances
 
         # Remove the '__index_level_0__' column from the datasets
         if "__index_level_0__" in valid_dataset.column_names:
