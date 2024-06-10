@@ -72,7 +72,7 @@ jobs:
       - name: Install additional dependencies
         run: sudo sh ./install.sh
       - name: Run tests
-        run: pytest --durations=20
+        run: pytest --durations=20 -s src/image2structure -m "not slow"
         env:
           TOKEN_GITHUB: ${{ secrets.TOKEN_GITHUB }}
           PERSPECTIVE_API_KEY: ${{ secrets.PERSPECTIVE_API_KEY }}

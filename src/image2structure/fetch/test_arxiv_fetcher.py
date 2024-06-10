@@ -6,6 +6,9 @@ import pytest
 from image2structure.fetch.arxiv_fetcher import ArxivFetcher
 from image2structure.fetch.fetcher import ScrapeResult, DownloadError
 
+# This test often causes issues in CI dur to 503 error from OpenArchives,
+# so it is disabled by default.
+
 
 class TestArxivFetcher:
     def setup_method(self, method):
@@ -27,14 +30,17 @@ class TestArxivFetcher:
     def teardown_method(self, method):
         shutil.rmtree(self.data_path)
 
+    @pytest.mark.slow
     def test_scrape_runs(self):
         results = self.fetcher.scrape(1)
         assert len(results) == 1
 
+    @pytest.mark.slow
     def test_scrape_count(self):
         results = self.fetcher.scrape(18)
         assert len(results) == 18
 
+    @pytest.mark.slow
     def test_download_runs(self):
         results = self.fetcher.scrape(1)
 

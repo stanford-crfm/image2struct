@@ -1,6 +1,7 @@
 from dotenv import load_dotenv
 
 import os
+import pytest
 import shutil
 
 from image2structure.collect import run, get_args_parser, get_runner_from_args
@@ -42,6 +43,7 @@ class TestRun:
         runner: Runner = get_runner_from_args(args)
         run(runner, args)
 
+    @pytest.mark.slow
     def test_latex(self):
         args = get_args_parser()[0].parse_args(
             [
