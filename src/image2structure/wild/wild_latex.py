@@ -13,7 +13,7 @@ def get_parser():
     parser.add_argument(
         "--input-dir",
         type=str,
-        default="data/equations_real",
+        default="data/equations_wild",
         help="The path to the input directory",
     )
     parser.add_argument(
@@ -44,7 +44,7 @@ def generate_metadata(uuid: str, url: str, save_dir: str):
         "instance_name": url.replace("https://www.", ""),
         "date_scrapped": datetime.now().isoformat(),
         "uuid": str(uuid),
-        "category": "real",
+        "category": "wild",
         "additional_info": {},
         "assets": [],
     }

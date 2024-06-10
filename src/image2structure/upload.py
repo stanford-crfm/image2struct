@@ -56,7 +56,7 @@ def transform(row: dict) -> dict:
     return row
 
 
-def classify_difficulty(dataset, data_type: str):
+def classify_difficulty(dataset, data_type: str, wild_data: bool = False):
     """
     Classify the difficulty of the instances in the dataset.
         - 1/3 of the instances are easy
@@ -70,41 +70,48 @@ def classify_difficulty(dataset, data_type: str):
     Returns:
         The dataset with the difficulty classified.
     """
-    if data_type == "latex":
-        lengths = [len(item["text"]) for item in dataset]
-    elif data_type == "musicsheet":
-        lengths = []
-        for item in tqdm(dataset, desc="Computing difficulty"):
-            with Image.open(io.BytesIO(item["image"]["bytes"])) as img:
-                img_array = np.array(img)
-                # Assuming the image is grayscale; update this if it's not
-                black_pixels = np.sum(img_array < np.max(img_array) / 4.0)
-                lengths.append(black_pixels)
-    elif data_type == "webpage":
-        lengths = [
-            int(json.loads(item["file_filters"])["RepoFilter"]["num_lines"]["code"])
-            + int(json.loads(item["file_filters"])["RepoFilter"]["num_lines"]["style"])
-            for item in dataset
-        ]
-    else:
-        raise ValueError(f"Unknown data type: {data_type}")
+    if not wild_data:
+        if data_type == "latex":
+            lengths = [len(item["text"]) for item in dataset]
+        elif data_type == "musicsheet":
+            lengths = []
+            for item in tqdm(dataset, desc="Computing difficulty"):
+                with Image.open(io.BytesIO(item["image"]["bytes"])) as img:
+                    img_array = np.array(img)
+                    # Assuming the image is grayscale; update this if it's not
+                    black_pixels = np.sum(img_array < np.max(img_array) / 4.0)
+                    lengths.append(black_pixels)
+        elif data_type == "webpage":
+            lengths = [
+                int(json.loads(item["file_filters"])["RepoFilter"]["num_lines"]["code"])
+                + int(
+                    json.loads(item["file_filters"])["RepoFilter"]["num_lines"]["style"]
+                )
+                for item in dataset
+            ]
+        else:
+            raise ValueError(f"Unknown data type: {data_type}")
 
-    # Sort lengths and find thresholds
-    lengths_sorted = sorted(lengths)
-    easy_threshold = lengths_sorted[len(lengths) // 3]
-    medium_threshold = lengths_sorted[(len(lengths) // 3) * 2]
+        # Sort lengths and find thresholds
+        lengths_sorted = sorted(lengths)
+        easy_threshold = lengths_sorted[len(lengths) // 3]
+        medium_threshold = lengths_sorted[(len(lengths) // 3) * 2]
 
     # Assign difficulty based on thresholds
     # Add "difficulty" to the columns of the dataset
     df = pd.DataFrame(dataset)
-    df["length"] = lengths
-    df["difficulty"] = "easy"
-    df.loc[
-        (df["difficulty"] == "easy") & (df["length"] > easy_threshold), "difficulty"
-    ] = "medium"
-    df.loc[
-        (df["difficulty"] == "medium") & (df["length"] > medium_threshold), "difficulty"
-    ] = "hard"
+    if wild_data:
+        df["difficulty"] = "hard"
+    else:
+        df["length"] = lengths
+        df["difficulty"] = "easy"
+        df.loc[
+            (df["difficulty"] == "easy") & (df["length"] > easy_threshold), "difficulty"
+        ] = "medium"
+        df.loc[
+            (df["difficulty"] == "medium") & (df["length"] > medium_threshold),
+            "difficulty",
+        ] = "hard"
     return Dataset.from_pandas(df)
 
 
@@ -238,7 +245,9 @@ def main():
         valid_dataset = Dataset.from_pandas(df).map(transform).shuffle()
 
         # Classify the difficulty of the instances
-        valid_dataset = classify_difficulty(valid_dataset, data_type)
+        valid_dataset = classify_difficulty(
+            valid_dataset, data_type, category == "wild"
+        )
         # valid_dataset = Dataset.from_pandas(df)
         # Print first 5 instances
 

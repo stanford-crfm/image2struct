@@ -252,7 +252,7 @@ def save_metadata(url: str, uuid_str: str, save_dir: str, subset: str):
         "instance_name": url.replace("https://www.", ""),
         "date_scrapped": datetime.now().isoformat(),
         "uuid": uuid_str,
-        "category": "real",
+        "category": "wild",
         "additional_info": {},
         "assets": [],
     }
