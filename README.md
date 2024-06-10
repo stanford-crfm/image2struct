@@ -96,4 +96,6 @@ Then, install the dependencies and git hook scripts:
 
 To run unit tests:
 
-    python -m pytest
+    python -m pytest -s src/image2structure -m "not slow" # Run all tests except ones using OpenArchives
+    python -m pytest -s src/image2structure -m "slow" # Run only tests using OpenArchives
+    python -m pytest -s src/image2structure # Run all tests
