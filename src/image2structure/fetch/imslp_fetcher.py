@@ -4,7 +4,12 @@ from imslp import client
 from mwclient.page import Page
 from mwclient.image import Image
 
-from image2structure.fetch.fetcher import Fetcher, ScrapeResult, DownloadError
+from image2structure.fetch.fetcher import (
+    Fetcher,
+    ScrapeResult,
+    DownloadError,
+    ScrapeError,
+)
 
 
 import requests
@@ -49,47 +54,57 @@ def fetch_images_metadata(page: mwclient.page.Page) -> list:
 
     images = []
 
-    for f in page.images():
+    try:
+        for f in page.images():
 
-        f_title = f.base_title
-        f_esc_title = urllib.parse.quote(f_title.replace(" ", "_"))
+            f_title = f.base_title
+            f_esc_title = urllib.parse.quote(f_title.replace(" ", "_"))
 
-        # Hacky way of finding the relevant metadata
-        t1 = s.find(attrs={"href": "/wiki/File:{}".format(f_esc_title)})
-        t2 = s.find(attrs={"title": "File:{}".format(f_title)})
+            # Hacky way of finding the relevant metadata
+            t1 = s.find(attrs={"href": "/wiki/File:{}".format(f_esc_title)})
+            t2 = s.find(attrs={"title": "File:{}".format(f_title)})
 
-        if t1 is None and t2 is None:
-            continue
+            if t1 is None and t2 is None:
+                continue
 
-        t = t1 or t2
-        if t.text.strip() == "":
-            continue
+            t = t1 or t2
+            if t.text.strip() == "":
+                continue
 
-        page_count = None
-        m = IMSLP_REGEXP_PAGE_COUNT.search(t.parent.text)
-        if m is not None:
-            try:
-                page_count = int(m.group(1))
-            except ValueError:
-                pass
+            page_count = None
+            m = IMSLP_REGEXP_PAGE_COUNT.search(t.parent.text)
+            if m is not None:
+                try:
+                    page_count = int(m.group(1))
+                except ValueError:
+                    pass
 
-        file_id = int(t.text.replace("#", ""))
+            file_id = int(t.text.replace("#", ""))
 
-        # Fix image URL
-        if f.imageinfo["url"][0] == "/":
-            # URL is //imslp.org/stuff...
-            f.imageinfo["url"] = "http:" + f.imageinfo["url"]
+            # Fix image URL
+            if f.imageinfo["url"][0] == "/":
+                # URL is //imslp.org/stuff...
+                f.imageinfo["url"] = "http:" + f.imageinfo["url"]
 
-        images.append(
-            {
-                "id": file_id,
-                "title": f_title,
-                "url": f.imageinfo["url"],
-                "page_count": page_count,
-                "size": f.imageinfo.get("size"),
-                "obj": f,
-            }
-        )
+            images.append(
+                {
+                    "id": file_id,
+                    "title": f_title,
+                    "url": f.imageinfo["url"],
+                    "page_count": page_count,
+                    "size": f.imageinfo.get("size"),
+                    "obj": f,
+                }
+            )
+    except requests.exceptions.ReadTimeout as e:
+        print(f"Read timeout: {e}")
+        raise ScrapeError(f"Read timeout: {e}")
+    except requests.exceptions.ConnectionError as e:
+        print(f"Connection error: {e}")
+        raise ScrapeError(f"Connection error: {e}")
+    except requests.exceptions.RequestException as e:
+        print(f"Request exception: {e}")
+        raise ScrapeError(f"Request exception: {e}")
 
     return images
 
@@ -234,7 +249,11 @@ class ImslpFetcher(Fetcher):
         ):
             raise DownloadError("No metadata or invalid metadata in the scrape result.")
 
-        image: Image = scrape_result.additional_info["metadata"]["obj"]
-        file_path: str = os.path.join(download_path, scrape_result.instance_name)
-        with open(file_path, "wb") as file:
-            image.download(file)
+        try:
+            image: Image = scrape_result.additional_info["metadata"]["obj"]
+            file_path: str = os.path.join(download_path, scrape_result.instance_name)
+            with open(file_path, "wb") as file:
+                image.download(file)
+        except Exception as e:
+            print(f"Error downloading {scrape_result.instance_name}: {e}")
+            raise DownloadError(f"Error downloading {scrape_result.instance_name}: {e}")
