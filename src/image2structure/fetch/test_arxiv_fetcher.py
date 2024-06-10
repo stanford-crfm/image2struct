@@ -6,7 +6,15 @@ import pytest
 from image2structure.fetch.arxiv_fetcher import ArxivFetcher
 from image2structure.fetch.fetcher import ScrapeResult, DownloadError
 
+# This test often causes issues in CI dur to 503 error from OpenArchives,
+# so it is disabled by default.
+# To run it locally, set the environment variable `RUN_SLOW_TESTS` to `1`
+# e.g. `RUN_SLOW_TESTS=1 pytest`
 
+
+@pytest.mark.skipif(
+    os.environ.get("RUN_SLOW_TESTS") is None, reason="Skipping slow tests"
+)
 class TestArxivFetcher:
     def setup_method(self, method):
         self.data_path = os.path.join(
