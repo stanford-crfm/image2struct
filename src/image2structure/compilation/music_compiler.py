@@ -84,7 +84,7 @@ class MusicCompiler(Compiler):
                 print(
                     f"Success: Extracted page {page_number} from {pdf_path} as an image."
                 )
-        except (RuntimeError, PDFPageCountError) as e:
+        except (RuntimeError, PDFPageCountError, Image.DecompressionBombError) as e:
             if self._verbose:
                 print(f"Skipping: Error generating image from {pdf_path}: {e}")
             return False, image

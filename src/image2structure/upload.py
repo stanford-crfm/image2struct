@@ -1,7 +1,6 @@
 from typing import Any, Dict, List
 from tqdm import tqdm
 from datasets import Dataset
-from sklearn.model_selection import train_test_split
 from datasets import DatasetDict, Features, Value, Image as HFImage, Sequence
 
 import argparse
@@ -10,6 +9,7 @@ import io
 from PIL import Image
 import base64
 import pandas as pd
+import numpy as np
 import json
 import imagehash
 
@@ -56,6 +56,65 @@ def transform(row: dict) -> dict:
     return row
 
 
+def classify_difficulty(dataset, data_type: str, wild_data: bool = False):
+    """
+    Classify the difficulty of the instances in the dataset.
+        - 1/3 of the instances are easy
+        - 1/3 of the instances are medium
+        - 1/3 of the instances are hard
+
+    Args:
+        dataset: The dataset to classify, expected to be an iterable of dictionaries.
+        data_type: The type of data to classify (e.g., webpage, latex).
+
+    Returns:
+        The dataset with the difficulty classified.
+    """
+    if not wild_data:
+        if data_type == "latex":
+            lengths = [len(item["text"]) for item in dataset]
+        elif data_type == "musicsheet":
+            lengths = []
+            for item in tqdm(dataset, desc="Computing difficulty"):
+                with Image.open(io.BytesIO(item["image"]["bytes"])) as img:
+                    img_array = np.array(img)
+                    # Assuming the image is grayscale; update this if it's not
+                    black_pixels = np.sum(img_array < np.max(img_array) / 4.0)
+                    lengths.append(black_pixels)
+        elif data_type == "webpage":
+            lengths = [
+                int(json.loads(item["file_filters"])["RepoFilter"]["num_lines"]["code"])
+                + int(
+                    json.loads(item["file_filters"])["RepoFilter"]["num_lines"]["style"]
+                )
+                for item in dataset
+            ]
+        else:
+            raise ValueError(f"Unknown data type: {data_type}")
+
+        # Sort lengths and find thresholds
+        lengths_sorted = sorted(lengths)
+        easy_threshold = lengths_sorted[len(lengths) // 3]
+        medium_threshold = lengths_sorted[(len(lengths) // 3) * 2]
+
+    # Assign difficulty based on thresholds
+    # Add "difficulty" to the columns of the dataset
+    df = pd.DataFrame(dataset)
+    if wild_data:
+        df["difficulty"] = "hard"
+    else:
+        df["length"] = lengths
+        df["difficulty"] = "easy"
+        df.loc[
+            (df["difficulty"] == "easy") & (df["length"] > easy_threshold), "difficulty"
+        ] = "medium"
+        df.loc[
+            (df["difficulty"] == "medium") & (df["length"] > medium_threshold),
+            "difficulty",
+        ] = "hard"
+    return Dataset.from_pandas(df)
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Upload collected data to huggingface")
     parser.add_argument(
@@ -82,6 +141,8 @@ def parse_args() -> argparse.Namespace:
 def main():
     args = parse_args()
 
+    data_type: str = os.path.basename(args.data_path)
+    print(f"\nUploading {data_type} dataset...")
     for category in os.listdir(args.data_path):
         print(f"\nUploading {category} dataset...")
         data_path: str = os.path.join(args.data_path, category)
@@ -123,12 +184,12 @@ def main():
         # Load the structure
         df: pd.DataFrame = pd.DataFrame()
         structure_set = set()
-        file_names: List[str] = os.listdir(structure_path)
+        file_names: List[str] = os.listdir(image_path)
         image_set = set()
         for i in tqdm(range(num_data_points), desc="Loading data"):
             try:
                 values = {}
-                file_name: str = file_names[i].replace(extension, "")
+                file_name: str = file_names[i].replace(".png", "")
 
                 if has_structure:
                     structure_file = os.path.join(
@@ -167,8 +228,11 @@ def main():
                 continue
 
         # Remove duplicates
-        # Only check the structure
-        df = df.drop_duplicates(subset=["structure"])
+        # Only check the structure if present, otherwise check the image (path)
+        if has_structure:
+            df = df.drop_duplicates(subset=["structure"])
+        else:
+            df = df.drop_duplicates(subset=["image"])
 
         # Limit the number of instances
         if args.max_instances > 0:
@@ -178,18 +242,19 @@ def main():
             df = df.sample(frac=1)
             df = df.head(args.max_instances)
 
-        # Split the dataset
-        valid_df, test_df = train_test_split(df, test_size=0.2)
-        valid_dataset = Dataset.from_pandas(valid_df).map(transform).shuffle()
-        test_dataset = Dataset.from_pandas(test_df).map(transform).shuffle()
+        valid_dataset = Dataset.from_pandas(df).map(transform).shuffle()
+
+        # Classify the difficulty of the instances
+        valid_dataset = classify_difficulty(
+            valid_dataset, data_type, category == "wild"
+        )
+        # valid_dataset = Dataset.from_pandas(df)
+        # Print first 5 instances
 
         # Remove the '__index_level_0__' column from the datasets
         if "__index_level_0__" in valid_dataset.column_names:
             print("Removing __index_level_0__")
             valid_dataset = valid_dataset.remove_columns("__index_level_0__")
-        if "__index_level_0__" in test_dataset.column_names:
-            print("Removing __index_level_0__")
-            test_dataset = test_dataset.remove_columns("__index_level_0__")
 
         # Define the features of the dataset
         features_dict = {
@@ -199,10 +264,9 @@ def main():
         features_dict["assets"] = Sequence(Value("string"))
         features = Features(features_dict)
         valid_dataset = valid_dataset.cast(features)
-        test_dataset = test_dataset.cast(features)
 
         # Push the dataset to the hub
-        dataset_dict = DatasetDict({"validation": valid_dataset, "test": test_dataset})
+        dataset_dict = DatasetDict({"validation": valid_dataset})
         dataset_dict.push_to_hub(args.dataset_name, config_name=category)
 
 
