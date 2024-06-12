@@ -143,7 +143,7 @@ def main():
 
     data_type: str = os.path.basename(args.data_path)
     print(f"\nUploading {data_type} dataset...")
-    for category in ["wild"]:  # os.listdir(args.data_path):
+    for category in os.listdir(args.data_path):
         print(f"\nUploading {category} dataset...")
         data_path: str = os.path.join(args.data_path, category)
 

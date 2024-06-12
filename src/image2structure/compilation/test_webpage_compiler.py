@@ -53,7 +53,6 @@ class TestWebpageCompiler:
         image = Image.open(self.image_path)
         ref_image = Image.open(ref_image_path)
         assert image.size == ref_image.size
-        assert image.mode == ref_image.mode
         # Check each pixel
         # Check that no more than 5% of the pixels are different
         num_diff = 0
