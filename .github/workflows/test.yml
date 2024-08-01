@@ -37,7 +37,7 @@ jobs:
       - name: Run static code checks
         run: source venv/bin/activate && ./pre-commit.sh
       - name: Collect 10 webpages
-        run: source venv/bin/activate && image2structure-collect --category html --num-instances 5 webpage --timeout 30 --port 4000 --max_size_kb 100
+        run: source venv/bin/activate && image2struct-collect --category html --num-instances 5 webpage --timeout 30 --port 4000 --max_size_kb 100
 
   test:
     name: Run all tests

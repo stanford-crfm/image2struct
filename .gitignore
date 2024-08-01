@@ -1,6 +1,6 @@
 data/*
 old_data/*
-src/image2structure/compilation/webpage/test_data/valid_repo/_site/feed.xml
+src/image2struct/compilation/webpage/test_data/valid_repo/_site/feed.xml
 tmp/*
 credentials/*
 experimental/*
