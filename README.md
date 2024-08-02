@@ -1,5 +1,5 @@
 # Image2Struct
-[Paper](TODO) | [Website](https://crfm.stanford.edu/helm/image2structure/latest/) | Datasets ([Webpages](https://huggingface.co/datasets/stanford-crfm/i2s-webpage), [Latex](https://huggingface.co/datasets/stanford-crfm/i2s-latex), [Music sheets](https://huggingface.co/datasets/stanford-crfm/i2s-musicsheet)) | [Leaderboard](https://crfm.stanford.edu/helm/image2structure/latest/#/leaderboard) | [HELM repo](https://github.com/stanford-crfm/helm)
+[Paper](TODO) | [Website](https://crfm.stanford.edu/helm/image2struct/latest/) | Datasets ([Webpages](https://huggingface.co/datasets/stanford-crfm/i2s-webpage), [Latex](https://huggingface.co/datasets/stanford-crfm/i2s-latex), [Music sheets](https://huggingface.co/datasets/stanford-crfm/i2s-musicsheet)) | [Leaderboard](https://crfm.stanford.edu/helm/image2struct/latest/#/leaderboard) | [HELM repo](https://github.com/stanford-crfm/helm)
 
 Welcome, the `image2struct` Python package contains code usied in the **Image2Struct: A Benchmark for Evaluating Vision-Language Models in Extracting Structured Information from Images** paper. This repo includes the following features:
 * Data collection: scrapers, filters, compilers, and uploaders for the different data types (Latex, Webpages, MusicSheets) from public sources (ArXiV, GitHub, IMSLP, ...)
@@ -27,9 +27,9 @@ Finally, create a `.env` file by copying the `.env.example` file and filling in 
 
 ### Data collection
 
-You can run `image2structure-collect` to collect data from different sources. For example, to collect data from GitHub Pages:
+You can run `image2struct-collect` to collect data from different sources. For example, to collect data from GitHub Pages:
 
-    image2structure-collect --num_instances 300 --num_instances_at_once 50 --max_instances_per_date 40 --date_from 2024-01-01 --date_to 2024-02-20 --timeout 30 --destination_path data webpage --language css --port 4000 --max_size_kb 100
+    image2struct-collect --num_instances 300 --num_instances_at_once 50 --max_instances_per_date 40 --date_from 2024-01-01 --date_to 2024-02-20 --timeout 30 --destination_path data webpage --language css --port 4000 --max_size_kb 100
 
 The general arguments are:
 * `--num_instances`: the number of instances to collect
@@ -71,7 +71,7 @@ The script will save the collected data to the specified destination path under 
 
 Once you have collected some datasets, you can upload them to the Hugging Face Datasets Hub. For example, to upload the latex dataset:
 
-    image2structure-upload --data-path data/latex --dataset-name stanford-crfm/i2s-latex --max-instances 50
+    image2struct-upload --data-path data/latex --dataset-name stanford-crfm/i2s-latex --max-instances 50
 
 This will upload the dataset to the Hugging Face Datasets Hub under the `stanford-crfm/i2s-latex` dataset name. The `max-instances` argument specifies the maximum number of instances to upload. The `--data-path` argument specifies the path to the dataset files. These files should respect the format outputed by the collection scripts.
 
@@ -96,6 +96,6 @@ Then, install the dependencies and git hook scripts:
 
 To run unit tests:
 
-    python -m pytest -s src/image2structure -m "not slow" # Run all tests except ones using OpenArchives
-    python -m pytest -s src/image2structure -m "slow" # Run only tests using OpenArchives
-    python -m pytest -s src/image2structure # Run all tests
+    python -m pytest -s src/image2struct -m "not slow" # Run all tests except ones using OpenArchives
+    python -m pytest -s src/image2struct -m "slow" # Run only tests using OpenArchives
+    python -m pytest -s src/image2struct # Run all tests
